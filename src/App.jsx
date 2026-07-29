@@ -25,22 +25,17 @@ html,body{margin:0;background:var(--void);-webkit-text-size-adjust:100%;}
 body{font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,ui-sans-serif,sans-serif;
   color:var(--white);-webkit-font-smoothing:antialiased;}
 .np-mono{font-family:'Inter',ui-sans-serif,sans-serif;font-variant-numeric:tabular-nums;}
-.np-app{min-height:100vh;min-height:100dvh;background:var(--void);padding-bottom:env(safe-area-inset-bottom);}
+.np-app{min-height:100vh;min-height:100dvh;background:var(--void);
+  padding-top:max(14px,env(safe-area-inset-top));padding-bottom:env(safe-area-inset-bottom);}
 .np-col{max-width:460px;margin:0 auto;padding:0 16px 90px;
   padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));}
-
-/* Liquid hero — full-bleed shout colour with an asymmetric organic cut */
-.np-hero{background:var(--shout);color:var(--ink);
-  border-radius:0 0 clamp(56px,20vw,120px) 40px;
-  padding:calc(env(safe-area-inset-top) + 26px) 0 34px;}
-.np-hero-in{max-width:460px;margin:0 auto;padding:0 24px;}
-.np-display{font-weight:800;letter-spacing:-.035em;line-height:.94;}
 
 /* Frosted glass — the only card surface in the void */
 .np-card{background:var(--glass);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
   border:1px solid var(--glass-line);border-radius:32px;
   box-shadow:0 24px 60px -20px rgba(0,0,0,.85);}
 .np-solid{background:var(--surface);border:1px solid rgba(255,255,255,.10);border-radius:32px;}
+.np-display{font-weight:800;letter-spacing:-.035em;line-height:.94;}
 
 /* Tiny functional labels, so the hero type carries the weight */
 .np-label{font-size:10px;text-transform:uppercase;letter-spacing:.18em;font-weight:700;}
@@ -52,10 +47,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,ui-s
   border-radius:999px;}
 .np-in:focus{outline:none;border-color:var(--shout);background:rgba(255,255,255,.11);}
 textarea.np-in{border-radius:22px;}
-/* Input variant for the coral hero, where the void styling would vanish */
-.np-in-ink{background:rgba(10,10,10,.09);border:1px solid rgba(10,10,10,.18);color:var(--ink);border-radius:999px;color-scheme:light;}
-.np-in-ink:focus{outline:none;border-color:var(--ink);background:rgba(255,255,255,.55);}
-.np-in-ink::placeholder{color:rgba(10,10,10,.42);}
 select.np-in option{background:var(--surface);color:var(--white);}
 input[type="time"].np-in,input[type="date"].np-in{color-scheme:dark;}
 ::placeholder{color:rgba(255,255,255,.42);}
@@ -332,13 +323,12 @@ export default function App() {
   return (
     <div className="np-app">
       <style>{STYLE}</style>
-      <Header trip={trip} countdown={countdown} editing={editHeader}
-        onEdit={() => setEditHeader(true)} onClose={() => setEditHeader(false)}
-        onSave={(p) => { save({ ...trip, ...p }); setEditHeader(false); }} />
-
       <div className="np-col">
-        {/* Pill tabs ride up over the hero's liquid edge */}
-        <div className="np-card" style={{ display: "flex", gap: 4, padding: 5, borderRadius: 999, marginTop: -12, position: "sticky", top: 10, zIndex: 5, background: "rgba(10,10,10,.72)" }}>
+        <Header trip={trip} countdown={countdown} editing={editHeader}
+          onEdit={() => setEditHeader(true)} onClose={() => setEditHeader(false)}
+          onSave={(p) => { save({ ...trip, ...p }); setEditHeader(false); }} />
+
+        <div className="np-card" style={{ display: "flex", gap: 4, padding: 5, borderRadius: 999, marginTop: 20, position: "sticky", top: 10, zIndex: 5 }}>
           {TABS.map(([id, icon, label]) => (
             <button key={id} onClick={() => setTab(id)} aria-pressed={tab === id}
               style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "10px 0", borderRadius: 999, border: "none", cursor: "pointer", fontSize: 11.5, fontWeight: 700, letterSpacing: "-.01em", background: tab === id ? "var(--shout)" : "transparent", color: tab === id ? "var(--ink)" : "rgba(255,255,255,.55)" }}>
@@ -378,74 +368,69 @@ function Header({ trip, countdown, editing, onEdit, onClose, onSave }) {
     ? `${fmtChip(trip.startDate).mo} ${fmtChip(trip.startDate).day} – ${fmtChip(trip.endDate).mo} ${fmtChip(trip.endDate).day}`
     : "Dates not set";
 
-  const onInk = "rgba(10,10,10,.62)";
-
+  // No hero, no card — this just flows as plain content at the top of the page,
+  // like the rest of the column.
   return (
-    <div className="np-hero">
-      <div className="np-hero-in">
-        {!editing ? (
-          <>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-              <span className="np-eyebrow" style={{ color: onInk }}>{trip.destination || "Newport, RI"}</span>
-              <button onClick={onEdit} aria-label="Edit trip"
-                style={{ background: "rgba(10,10,10,.10)", border: "none", borderRadius: 999, width: 34, height: 34, display: "grid", placeItems: "center", cursor: "pointer", color: "var(--ink)", flexShrink: 0, marginTop: 2 }}>
-                <Ico n="pencil" s={15} w={2.4} />
-              </button>
-            </div>
-
-            {/* Massive type is the anchor — everything else stays tiny */}
-            <h1 className="np-display" style={{ fontSize: "clamp(40px,12.5vw,60px)", margin: 0 }}>
-              {trip.name || "Untitled Trip"}
-            </h1>
-
-            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, marginTop: 22 }}>
-              <div>
-                <div className="np-label" style={{ color: onInk }}>Dates</div>
-                <div style={{ fontSize: 16, fontWeight: 700, marginTop: 5, letterSpacing: "-.01em" }}>{range}</div>
-              </div>
-              {countdown !== null && (
-                <div style={{ textAlign: "right", flexShrink: 0 }}>
-                  <div className="np-display" style={{ fontSize: countdown > 0 ? 52 : 30 }}>
-                    {countdown > 0 ? countdown : countdown === 0 ? "Today" : "—"}
-                  </div>
-                  <div className="np-label" style={{ color: onInk, marginTop: 3 }}>
-                    {countdown > 1 ? "days to go" : countdown === 1 ? "day to go" : countdown === 0 ? "you're off" : "in progress"}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {trip.homeBase && (
-              <a href={`https://www.google.com/maps/search/?api=1&query=${enc(trip.homeBase)}`} target="_blank" rel="noopener noreferrer"
-                className="np-label"
-                style={{ display: "inline-flex", alignItems: "center", gap: 7, marginTop: 20, color: "var(--white)", textDecoration: "none", borderRadius: 999, padding: "11px 18px", background: "var(--ink)" }}>
-                <Ico n="home" s={13} c="var(--shout)" w={2.4} />{trip.homeBase}
-              </a>
-            )}
-          </>
-        ) : (
-          <div className="np-pop" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span className="np-label" style={{ color: onInk }}>Edit trip</span>
-              <button onClick={onClose} aria-label="Close"
-                style={{ background: "rgba(10,10,10,.10)", border: "none", borderRadius: 999, width: 34, height: 34, display: "grid", placeItems: "center", cursor: "pointer", color: "var(--ink)" }}>
-                <Ico n="x" s={17} w={2.4} />
-              </button>
-            </div>
-            <Field label="Trip name" onShout><input className="np-in-ink" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} style={inkInput} /></Field>
-            <Field label="Destination" onShout><input className="np-in-ink" value={f.destination} onChange={(e) => setF({ ...f, destination: e.target.value })} style={inkInput} placeholder="Newport, RI" /></Field>
-            <Field label="Home base" onShout><input className="np-in-ink" value={f.homeBase} onChange={(e) => setF({ ...f, homeBase: e.target.value })} style={inkInput} placeholder="Hotel / address" /></Field>
-            <div style={{ display: "flex", gap: 10 }}>
-              <Field label="Start" onShout><input type="date" className="np-in-ink" value={f.startDate} onChange={(e) => setF({ ...f, startDate: e.target.value })} style={{ ...inkInput, fontSize: 13 }} /></Field>
-              <Field label="End" onShout><input type="date" className="np-in-ink" value={f.endDate} min={f.startDate} onChange={(e) => setF({ ...f, endDate: e.target.value })} style={{ ...inkInput, fontSize: 13 }} /></Field>
-            </div>
-            <button onClick={() => onSave(f)} className="np-label"
-              style={{ marginTop: 4, background: "var(--ink)", color: "var(--white)", border: "none", borderRadius: 999, padding: "15px 0", cursor: "pointer" }}>
-              Save trip
+    <div style={{ marginTop: 2 }}>
+      {!editing ? (
+        <>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <span className="np-eyebrow" style={{ color: "var(--shout)" }}>{trip.destination || "Newport, RI"}</span>
+            <button onClick={onEdit} aria-label="Edit trip" style={{ ...ghost, flexShrink: 0, marginTop: 2 }}>
+              <Ico n="pencil" s={16} c="var(--dim)" w={2.4} />
             </button>
           </div>
-        )}
-      </div>
+
+          <h1 style={{ fontSize: 32, fontWeight: 800, letterSpacing: "-.02em", lineHeight: 1.08, margin: "8px 0 0" }}>
+            {trip.name || "Untitled Trip"}
+          </h1>
+
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, marginTop: 16 }}>
+            <div>
+              <div className="np-label" style={{ color: "var(--dim)" }}>Dates</div>
+              <div style={{ fontSize: 15, fontWeight: 700, marginTop: 4, letterSpacing: "-.01em" }}>{range}</div>
+            </div>
+            {countdown !== null && (
+              <div style={{ textAlign: "right", flexShrink: 0 }}>
+                <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: "-.02em", color: countdown >= 0 ? "var(--shout)" : "var(--dim)" }}>
+                  {countdown > 0 ? countdown : countdown === 0 ? "Today" : "—"}
+                </div>
+                <div className="np-label" style={{ color: "var(--dim)", marginTop: 2 }}>
+                  {countdown > 1 ? "days to go" : countdown === 1 ? "day to go" : countdown === 0 ? "you're off" : "in progress"}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {trip.homeBase && (
+            <a href={`https://www.google.com/maps/search/?api=1&query=${enc(trip.homeBase)}`} target="_blank" rel="noopener noreferrer"
+              className="np-label"
+              style={{ display: "inline-flex", alignItems: "center", gap: 7, marginTop: 14, color: "var(--shout)", textDecoration: "none", border: "1px solid var(--glass-line)", borderRadius: 999, padding: "9px 15px", background: "var(--glass)" }}>
+              <Ico n="home" s={13} c="var(--shout)" w={2.4} />{trip.homeBase}
+            </a>
+          )}
+        </>
+      ) : (
+        <div className="np-pop" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span className="np-label" style={{ color: "var(--dim)" }}>Edit trip</span>
+            <button onClick={onClose} aria-label="Close" style={ghost}>
+              <Ico n="x" s={18} c="var(--dim)" w={2.4} />
+            </button>
+          </div>
+          <Field label="Trip name"><input className="np-in" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} style={inStyle} /></Field>
+          <Field label="Destination"><input className="np-in" value={f.destination} onChange={(e) => setF({ ...f, destination: e.target.value })} style={inStyle} placeholder="Newport, RI" /></Field>
+          <Field label="Home base"><input className="np-in" value={f.homeBase} onChange={(e) => setF({ ...f, homeBase: e.target.value })} style={inStyle} placeholder="Hotel / address" /></Field>
+          <div style={{ display: "flex", gap: 10 }}>
+            <Field label="Start"><input type="date" className="np-in np-mono" value={f.startDate} onChange={(e) => setF({ ...f, startDate: e.target.value })} style={{ ...inStyle, fontSize: 13 }} /></Field>
+            <Field label="End"><input type="date" className="np-in np-mono" value={f.endDate} min={f.startDate} onChange={(e) => setF({ ...f, endDate: e.target.value })} style={{ ...inStyle, fontSize: 13 }} /></Field>
+          </div>
+          <button onClick={() => onSave(f)} className="np-label"
+            style={{ marginTop: 4, background: "var(--shout)", color: "var(--ink)", border: "none", borderRadius: 999, padding: "15px 0", cursor: "pointer" }}>
+            Save trip
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -600,18 +585,7 @@ function Lineup({ trip, days, save }) {
   const [time, setTime] = useState("20:00");
   // Opens on your must-sees; the pill (or the empty-state button) flips to the full schedule.
   const [onlyStar, setOnlyStar] = useState(true);
-  const [openDir, setOpenDir] = useState(null);
-  const [openPlan, setOpenPlan] = useState(null);
-  const [planned, setPlanned] = useState(null);
-  const [editId, setEditId] = useState(null);
   const [stageFilter, setStageFilter] = useState("All");
-
-  // Drop a set onto any day, independent of starring — lets you pencil in a set
-  // you're only half sure about without marking it a must-see. Carries fromLineup
-  // so the Plans card renders the same stage/time info as the Lineup card.
-  const addActToPlan = (act, iso) => {
-    save({ ...trip, days: { ...trip.days, [iso]: [...(trip.days[iso] || []), { id: uid(), time: act.time || "", title: planTitle(act), fromLineup: act.id }] } });
-  };
 
   const add = () => {
     if (!artist.trim()) return;
@@ -632,23 +606,6 @@ function Lineup({ trip, days, save }) {
         }
       } else if (cur.some((i) => i.fromLineup === act.id)) {
         daysObj = { ...daysObj, [act.date]: cur.filter((i) => i.fromLineup !== act.id) };
-      }
-    }
-    save({ ...trip, lineup, days: daysObj });
-  };
-  const updateAct = (id, patch) => {
-    const act = trip.lineup.find((a) => a.id === id);
-    let lineup = trip.lineup.map((a) => a.id === id ? { ...a, ...patch } : a);
-    let daysObj = trip.days;
-    // Keep a starred act's auto-added Plans entry in sync with edited date/time/stage.
-    if (act && act.starred) {
-      const next = { ...act, ...patch };
-      if (act.date && daysObj[act.date]) {
-        daysObj = { ...daysObj, [act.date]: daysObj[act.date].filter((i) => i.fromLineup !== id) };
-      }
-      if (next.date && days.includes(next.date)) {
-        const cur = daysObj[next.date] || [];
-        daysObj = { ...daysObj, [next.date]: [...cur, { id: uid(), time: next.time || "", title: planTitle(next), fromLineup: id }] };
       }
     }
     save({ ...trip, lineup, days: daysObj });
@@ -703,9 +660,7 @@ function Lineup({ trip, days, save }) {
             {k === "Unscheduled" ? "Unscheduled — check the poster" : `${fmtChip(k).wd} · ${fmtChip(k).mo} ${fmtChip(k).day}`}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-            {groups[k].slice().sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99")).map((a) => {
-              const editing = editId === a.id;
-              return (
+            {groups[k].slice().sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99")).map((a) => (
               <div key={a.id} className="np-card np-pop" style={{ borderRadius: 32, padding: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
                   <button onClick={() => star(a.id)} aria-label="Star" style={{ ...ghost, flexShrink: 0 }}>
@@ -718,62 +673,10 @@ function Lineup({ trip, days, save }) {
                       {a.stage ? <Pill label={a.stage.replace(" Stage", "")} color={STAGE_COLOR[a.stage]} /> : <DashedPill label="Stage TBA" />}
                     </div>
                   </div>
-                  <button onClick={() => { setOpenPlan(openPlan === a.id ? null : a.id); setPlanned(null); }} aria-label="Add to plans" style={{ ...iconBtn, background: openPlan === a.id ? "var(--shout)" : "rgba(255,255,255,.06)" }}>
-                    <Ico n="cal" s={16} c={openPlan === a.id ? "var(--ink)" : "var(--white)"} />
-                  </button>
-                  <button onClick={() => setOpenDir(openDir === a.id ? null : a.id)} aria-label="Directions" style={{ ...iconBtn, background: openDir === a.id ? "var(--shout)" : "rgba(255,255,255,.06)" }}>
-                    <Ico n="route" s={16} c={openDir === a.id ? "var(--ink)" : "var(--white)"} />
-                  </button>
-                  <button onClick={() => setEditId(editing ? null : a.id)} aria-label="Edit" style={{ ...iconBtn, background: editing ? "var(--shout)" : "rgba(255,255,255,.06)" }}><Ico n="pencil" s={14} c={editing ? "var(--ink)" : "var(--white)"} /></button>
                   <button onClick={() => del(a.id)} aria-label="Remove" style={ghost}><Ico n="trash" s={15} /></button>
                 </div>
-                {openPlan === a.id && (
-                  <div className="np-pop" style={{ marginTop: 12, borderTop: "1px solid var(--glass-line)", paddingTop: 12 }}>
-                    <div className="np-label" style={{ color: "var(--dim)", marginBottom: 9 }}>Add to a day</div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                      {days.map((iso) => {
-                        const ch = fmtChip(iso); const on = planned === iso;
-                        return (
-                          <button key={iso} onClick={() => { addActToPlan(a, iso); setPlanned(iso); }} className="np-mono"
-                            style={{ fontSize: 11.9, padding: "8px 13px", borderRadius: 999, cursor: "pointer", border: "1px solid var(--glass-line)", background: on ? "var(--shout)" : "rgba(255,255,255,.06)", color: on ? "var(--ink)" : "var(--white)" }}>
-                            {ch.wd} {ch.mo} {ch.day}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {planned && (
-                      <div className="np-mono" style={{ fontSize: 11.9, color: "var(--shout)", marginTop: 10, lineHeight: 1.4 }}>
-                        Added to your Plans{a.time ? ` at ${a.time}` : " as an any-time item"} — open Plans to adjust.
-                      </div>
-                    )}
-                  </div>
-                )}
-                {editing && (
-                  <div className="np-pop" style={{ marginTop: 12, borderTop: "1.5px dashed var(--glass-line)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-                    <input value={a.artist} onChange={(e) => updateAct(a.id, { artist: e.target.value })} placeholder="Artist / act" className="np-in" style={inStyle} />
-                    <select value={a.stage || ""} onChange={(e) => updateAct(a.id, { stage: e.target.value })} className="np-in np-mono" style={{ ...inStyle, fontSize: 12.5 }}>
-                      <option value="">Stage TBA</option>
-                      {STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <select value={a.date || ""} onChange={(e) => updateAct(a.id, { date: e.target.value })} className="np-in np-mono" style={{ ...inStyle, flex: 1, fontSize: 12.5 }}>
-                        <option value="">No date</option>
-                        {days.map((d) => <option key={d} value={d}>{`${fmtChip(d).wd} ${fmtChip(d).mo} ${fmtChip(d).day}`}</option>)}
-                      </select>
-                    </div>
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      <span className="np-mono" style={{ fontSize: 10, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--dim)", flexShrink: 0 }}>Set</span>
-                      <input type="time" value={a.time || ""} onChange={(e) => updateAct(a.id, { time: e.target.value })} className="np-in np-mono" style={{ ...inStyle, flex: 1, fontSize: 12.5 }} />
-                      <span className="np-mono" style={{ color: "var(--dim)", flexShrink: 0 }}>–</span>
-                      <input type="time" value={a.endTime || ""} onChange={(e) => updateAct(a.id, { endTime: e.target.value })} className="np-in np-mono" style={{ ...inStyle, flex: 1, fontSize: 12.5 }} />
-                    </div>
-                    <button onClick={() => setEditId(null)} className="np-mono" style={{ alignSelf: "flex-start", background: "var(--shout)", color: "var(--ink)", border: "none", borderRadius: 999, padding: "8px 18px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Done</button>
-                  </div>
-                )}
-                {openDir === a.id && <MapPanel from={trip.homeBase} to={`${a.venue || FEST_VENUE} ${trip.destination || ""}`} />}
               </div>
-              );
-            })}
+            ))}
           </div>
         </div>
       ))}
@@ -1099,10 +1002,10 @@ function DataTools({ trip, save }) {
   );
 }
 
-function Field({ label, children, onShout }) {
+function Field({ label, children }) {
   return (
     <label style={{ flex: 1, display: "block" }}>
-      <span className="np-label" style={{ color: onShout ? "rgba(10,10,10,.62)" : "rgba(255,255,255,.45)", display: "block", marginBottom: 7, paddingLeft: 4 }}>{label}</span>
+      <span className="np-label" style={{ color: "rgba(255,255,255,.45)", display: "block", marginBottom: 7, paddingLeft: 4 }}>{label}</span>
       {children}
     </label>
   );
@@ -1127,7 +1030,6 @@ function Empty({ icon, title, sub, action, onAction, compact }) {
 
 // Shared control styling. Pills everywhere — no mid-size radii anywhere in the UI.
 const inStyle = { width: "100%", padding: "13px 17px", fontSize: 14.5, border: "none" };
-const inkInput = { width: "100%", padding: "13px 17px", fontSize: 14.5, border: "none" };
 const addBtn = { width: 46, height: 46, flexShrink: 0, borderRadius: 999, border: "none", background: "var(--shout)", color: "var(--ink)", display: "grid", placeItems: "center", cursor: "pointer" };
 const iconBtn = { width: 40, height: 40, flexShrink: 0, borderRadius: 999, border: "1px solid var(--glass-line)", background: "rgba(255,255,255,.06)", display: "grid", placeItems: "center", cursor: "pointer" };
 const ghost = { background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,.42)", padding: 0, display: "grid", placeItems: "center" };
