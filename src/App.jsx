@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
 
 // ---- styles ---------------------------------------------------------------
-// Hyper-Saturated Fluid: coral is the one "shout" colour, carrying the liquid
-// hero; everything below sits in a Deep Onyx void on frosted glass. Navy is kept
-// from the original palette as the deep accent. The old sand background is gone.
+// Hyper-Saturated Fluid: a dull leaf/dollar-bill green is the one "shout"
+// colour, carrying the liquid hero; everything below sits in a Deep Onyx void
+// on frosted glass. Navy is kept from the original palette as the deep accent.
+// The old sand background is gone.
 const STYLE = `
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 :root{
-  --shout:#FF6B4A;              /* the 60% colour: saturated, flat, never gradient */
+  --shout:#7A9B5E;              /* the 60% colour: muted, flat leaf green, never gradient */
   --void:#0A0A0A;               /* Deep Onyx */
   --surface:#171717;            /* Charcoal */
   --gray:#262626;               /* Deep Gray */
@@ -43,6 +44,9 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,ui-s
 
 /* Tiny functional labels, so the hero type carries the weight */
 .np-label{font-size:10px;text-transform:uppercase;letter-spacing:.18em;font-weight:700;}
+/* The destination line — still a header, not the massive hero type, but 2x the
+   usual label size per request so it reads on its own at a glance. */
+.np-eyebrow{font-size:20px;text-transform:uppercase;letter-spacing:.03em;font-weight:800;}
 
 .np-in{background:rgba(255,255,255,.06);border:1px solid var(--glass-line);color:var(--white);
   border-radius:999px;}
@@ -379,10 +383,10 @@ function Header({ trip, countdown, editing, onEdit, onClose, onSave }) {
       <div className="np-hero-in">
         {!editing ? (
           <>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
-              <span className="np-label" style={{ color: onInk }}>{trip.destination || "Newport, RI"}</span>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+              <span className="np-eyebrow" style={{ color: onInk }}>{trip.destination || "Newport, RI"}</span>
               <button onClick={onEdit} aria-label="Edit trip"
-                style={{ background: "rgba(10,10,10,.10)", border: "none", borderRadius: 999, width: 34, height: 34, display: "grid", placeItems: "center", cursor: "pointer", color: "var(--ink)", flexShrink: 0 }}>
+                style={{ background: "rgba(10,10,10,.10)", border: "none", borderRadius: 999, width: 34, height: 34, display: "grid", placeItems: "center", cursor: "pointer", color: "var(--ink)", flexShrink: 0, marginTop: 2 }}>
                 <Ico n="pencil" s={15} w={2.4} />
               </button>
             </div>
@@ -450,6 +454,7 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save, gotoHeader }) {
   const [allDay, setAllDay] = useState(false);
   const [title, setTitle] = useState("");
   const [editId, setEditId] = useState(null);
+  const [openDirId, setOpenDirId] = useState(null);
   if (!days.length)
     return <Empty icon="cal" title="Set your dates first" sub="Add a start and end date and your trip days appear here, ready to fill." action="Add travel dates" onAction={gotoHeader} />;
 
@@ -487,6 +492,17 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save, gotoHeader }) {
         ? <Empty icon="nav" title="Nothing planned yet" sub="Add a set, a beach block, dinner — with a time, or any-time for loose ideas." compact />
         : <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{items.map((it) => {
           const editing = editId === it.id;
+          const dirOpen = openDirId === it.id;
+          // A plan item that came from Spots or Lineup carries the full source
+          // record, so it renders with the same info as its home tab — category
+          // or stage, summary, and directions — not just a bare title.
+          const sourcePlace = it.fromPlace ? trip.places.find((p) => p.id === it.fromPlace) : null;
+          const sourceAct = it.fromLineup ? trip.lineup.find((a) => a.id === it.fromLineup) : null;
+          const mapTarget = sourcePlace
+            ? `${sourcePlace.name} ${sourcePlace.near || trip.destination || ""}`
+            : sourceAct
+              ? `${sourceAct.venue || FEST_VENUE} ${trip.destination || ""}`
+              : null;
           return (
           <div key={it.id} className="np-card np-pop" style={{ borderRadius: 32, overflow: "hidden", padding: 0 }}>
             <div style={{ display: "flex", alignItems: "stretch" }}>
@@ -500,11 +516,41 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save, gotoHeader }) {
               <div style={{ flex: 1, minWidth: 0, padding: "12px 10px 12px 14px", display: "flex", alignItems: "flex-start", gap: 6 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.25 }}>{it.title}</div>
-                  {it.note && !editing && <div style={{ fontSize: 12.5, color: "var(--dim)", lineHeight: 1.45, marginTop: 5, whiteSpace: "pre-wrap" }}>{it.note}</div>}
-                  {!it.note && !editing && <button onClick={() => setEditId(it.id)} className="np-mono" style={{ marginTop: 6, background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 10.5, fontWeight: 600, letterSpacing: ".05em", textTransform: "uppercase", color: "var(--shout)" }}>+ Add note</button>}
+
+                  {sourcePlace && (
+                    <>
+                      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 7, marginTop: 5 }}>
+                        <span className="np-mono" style={{ fontSize: 10.3, letterSpacing: ".1em", textTransform: "uppercase", color: TAG_COLOR[sourcePlace.category] || "var(--shout)", fontWeight: 700 }}>{sourcePlace.category}</span>
+                        {sourcePlace.near && <span className="np-mono" style={{ fontSize: 11, color: "var(--dim)" }}>{sourcePlace.near}</span>}
+                      </div>
+                      {sourcePlace.summary && <div style={{ fontSize: 12.5, color: "var(--dim)", lineHeight: 1.5, marginTop: 6 }}>{sourcePlace.summary}</div>}
+                      {sourcePlace.url && (
+                        <a href={sourcePlace.url} target="_blank" rel="noopener noreferrer" className="np-mono" style={{ display: "flex", width: "fit-content", alignItems: "center", gap: 4, marginTop: 7, fontSize: 11.5, fontWeight: 600, color: "var(--shout)", textDecoration: "none", letterSpacing: ".03em", textTransform: "uppercase" }}>
+                          More info ↗
+                        </a>
+                      )}
+                    </>
+                  )}
+
+                  {sourceAct && (
+                    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 7, marginTop: 5 }}>
+                      {sourceAct.stage
+                        ? <span className="np-mono" style={{ fontSize: 9.8, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink)", background: STAGE_COLOR[sourceAct.stage] || "var(--shout)", borderRadius: 999, padding: "3px 7px" }}>{sourceAct.stage.replace(" Stage", "")}</span>
+                        : <span className="np-mono" style={{ fontSize: 9.8, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--dim)", border: "1px dashed var(--glass-line)", borderRadius: 999, padding: "2px 6px" }}>Stage TBA</span>}
+                      {sourceAct.endTime && <span className="np-mono" style={{ fontSize: 11, color: "var(--dim)" }}>ends {sourceAct.endTime}</span>}
+                    </div>
+                  )}
+
+                  {it.note && !editing && <div style={{ fontSize: 12.5, color: "var(--dim)", lineHeight: 1.45, marginTop: 7, whiteSpace: "pre-wrap" }}>{it.note}</div>}
+                  {!it.note && !editing && <button onClick={() => setEditId(it.id)} className="np-mono" style={{ marginTop: 7, background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 10.5, fontWeight: 600, letterSpacing: ".05em", textTransform: "uppercase", color: "var(--shout)" }}>+ Add note</button>}
                 </div>
-                <button onClick={() => setEditId(editing ? null : it.id)} aria-label="Edit" style={{ ...iconBtn, width: 34, height: 34, background: editing ? "var(--shout)" : "rgba(255,255,255,.06)" }}><Ico n="pencil" s={14} c={editing ? "var(--ink)" : "var(--white)"} /></button>
-                <button onClick={() => del(it.id)} aria-label="Remove" style={ghost}><Ico n="trash" s={15} /></button>
+                <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                  <button onClick={() => setEditId(editing ? null : it.id)} aria-label="Edit" style={{ ...iconBtn, width: 34, height: 34, background: editing ? "var(--shout)" : "rgba(255,255,255,.06)" }}><Ico n="pencil" s={14} c={editing ? "var(--ink)" : "var(--white)"} /></button>
+                  {mapTarget && (
+                    <button onClick={() => setOpenDirId(dirOpen ? null : it.id)} aria-label="Directions" style={{ ...iconBtn, width: 34, height: 34, background: dirOpen ? "var(--shout)" : "rgba(255,255,255,.06)" }}><Ico n="route" s={14} c={dirOpen ? "var(--ink)" : "var(--white)"} /></button>
+                  )}
+                  <button onClick={() => del(it.id)} aria-label="Remove" style={ghost}><Ico n="trash" s={15} /></button>
+                </div>
               </div>
             </div>
             {editing && (
@@ -521,6 +567,7 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save, gotoHeader }) {
                 <button onClick={() => setEditId(null)} className="np-mono" style={{ alignSelf: "flex-start", background: "var(--shout)", color: "var(--ink)", border: "none", borderRadius: 999, padding: "8px 18px", fontSize: 12, fontWeight: 600, cursor: "pointer", letterSpacing: ".01em" }}>Done</button>
               </div>
             )}
+            {dirOpen && mapTarget && <div style={{ padding: "0 14px 14px" }}><MapPanel from={trip.homeBase} to={mapTarget} /></div>}
           </div>);
         })}
         </div>}
@@ -556,9 +603,10 @@ function Lineup({ trip, days, save }) {
   const [stageFilter, setStageFilter] = useState("All");
 
   // Drop a set onto any day, independent of starring — lets you pencil in a set
-  // you're only half sure about without marking it a must-see.
+  // you're only half sure about without marking it a must-see. Carries fromLineup
+  // so the Plans card renders the same stage/time info as the Lineup card.
   const addActToPlan = (act, iso) => {
-    save({ ...trip, days: { ...trip.days, [iso]: [...(trip.days[iso] || []), { id: uid(), time: act.time || "", title: planTitle(act) }] } });
+    save({ ...trip, days: { ...trip.days, [iso]: [...(trip.days[iso] || []), { id: uid(), time: act.time || "", title: planTitle(act), fromLineup: act.id }] } });
   };
 
   const add = () => {
@@ -769,8 +817,10 @@ function Places({ trip, days, save }) {
     setName("");
   };
   const del = (id) => save({ ...trip, places: trip.places.filter((p) => p.id !== id) });
+  // fromPlace lets the Plans card render the full spot info — category, summary,
+  // directions — instead of just a bare title.
   const addToPlan = (p, iso) => {
-    const item = { id: uid(), time: "", title: p.name };
+    const item = { id: uid(), time: "", title: p.name, fromPlace: p.id };
     save({ ...trip, days: { ...trip.days, [iso]: [...(trip.days[iso] || []), item] } });
   };
 
