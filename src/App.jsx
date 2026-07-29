@@ -141,12 +141,13 @@ function daysUntil(iso) {
 // remaining announced acts sit on Sunday without a time — tap the pencil to fill
 // them in once the poster drops.
 const STAGES = ["Fort Stage", "Quad Stage", "Harbor Stage", "Foundation Stage"];
-// Poster stage colours, lifted for legibility against the Deep Onyx void.
+// Poster stage colours — dusty, muted versions of the poster's red/green/blue/
+// gold rather than neon, so the palette reads as calm and varied, not loud.
 const STAGE_COLOR = {
-  "Fort Stage": "#FF5C7C",
-  "Quad Stage": "#3ED47A",
-  "Harbor Stage": "#4FA8FF",
-  "Foundation Stage": "#E5BC53",
+  "Fort Stage": "#C1697C",
+  "Quad Stage": "#5FA07E",
+  "Harbor Stage": "#5B8FBD",
+  "Foundation Stage": "#BFA35C",
 };
 const FEST_VENUE = "Fort Adams State Park";
 const SEED_VERSION = 3;
@@ -214,7 +215,8 @@ const DEFAULT = {
   days: {}, places: [], lineup: [], seededLineup: false, lineupVersion: 0, datesVersion: 0,
 };
 const PLACE_CATS = ["Beach", "Eat", "See", "Do", "Sail", "Historic", "Nature", "Shop", "Sweet", "Music", "Scenic"];
-const TAG_COLOR = { Beach: "#22C7E8", Eat: "#FF7A4D", See: "#6BB6E8", Do: "#D89A5C", Sail: "#35D6A8", Historic: "#D4A857", Nature: "#5FD16E", Shop: "#D07AB8", Sweet: "#FF8FB4", Music: "#9B8BFF", Scenic: "#58D19A" };
+// Muted, "chill" hues per category — colorful without being neon-bright.
+const TAG_COLOR = { Beach: "#5B95B0", Eat: "#C1785A", See: "#6E8FB3", Do: "#B98F5E", Sail: "#4FA093", Historic: "#B99A5B", Nature: "#7BA070", Shop: "#B0759B", Sweet: "#C17B94", Music: "#8B85BD", Scenic: "#6BA085" };
 const PLACES_VERSION = 3;
 
 
@@ -515,17 +517,21 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save, gotoHeader }) {
               </button>
               <div style={{ flex: 1, minWidth: 0, padding: "12px 10px 12px 14px", display: "flex", alignItems: "flex-start", gap: 6 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.25 }}>{it.title}</div>
+                  {/* A sourced item (from Spots or Lineup) gets that card's own title
+                      size and badge, so it reads as the exact same card, not a summary
+                      of it. A hand-typed item stays smaller — it's a quick note, not a
+                      saved place. */}
+                  <div style={{ fontSize: sourcePlace || sourceAct ? 18.5 : 15, fontWeight: sourcePlace || sourceAct ? 700 : 600, lineHeight: 1.2 }}>{it.title}</div>
 
                   {sourcePlace && (
                     <>
-                      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 7, marginTop: 5 }}>
-                        <span className="np-mono" style={{ fontSize: 10.3, letterSpacing: ".1em", textTransform: "uppercase", color: TAG_COLOR[sourcePlace.category] || "var(--shout)", fontWeight: 700 }}>{sourcePlace.category}</span>
+                      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 7, marginTop: 7 }}>
+                        <Pill label={sourcePlace.category} color={TAG_COLOR[sourcePlace.category]} />
                         {sourcePlace.near && <span className="np-mono" style={{ fontSize: 11, color: "var(--dim)" }}>{sourcePlace.near}</span>}
                       </div>
-                      {sourcePlace.summary && <div style={{ fontSize: 12.5, color: "var(--dim)", lineHeight: 1.5, marginTop: 6 }}>{sourcePlace.summary}</div>}
+                      {sourcePlace.summary && <div style={{ fontSize: 13.5, color: "var(--dim)", lineHeight: 1.5, marginTop: 9 }}>{sourcePlace.summary}</div>}
                       {sourcePlace.url && (
-                        <a href={sourcePlace.url} target="_blank" rel="noopener noreferrer" className="np-mono" style={{ display: "flex", width: "fit-content", alignItems: "center", gap: 4, marginTop: 7, fontSize: 11.5, fontWeight: 600, color: "var(--shout)", textDecoration: "none", letterSpacing: ".03em", textTransform: "uppercase" }}>
+                        <a href={sourcePlace.url} target="_blank" rel="noopener noreferrer" className="np-mono" style={{ display: "flex", width: "fit-content", alignItems: "center", gap: 4, marginTop: 8, fontSize: 11.9, fontWeight: 600, color: "var(--shout)", textDecoration: "none", letterSpacing: ".03em", textTransform: "uppercase" }}>
                           More info ↗
                         </a>
                       )}
@@ -533,21 +539,19 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save, gotoHeader }) {
                   )}
 
                   {sourceAct && (
-                    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 7, marginTop: 5 }}>
-                      {sourceAct.stage
-                        ? <span className="np-mono" style={{ fontSize: 9.8, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink)", background: STAGE_COLOR[sourceAct.stage] || "var(--shout)", borderRadius: 999, padding: "3px 7px" }}>{sourceAct.stage.replace(" Stage", "")}</span>
-                        : <span className="np-mono" style={{ fontSize: 9.8, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--dim)", border: "1px dashed var(--glass-line)", borderRadius: 999, padding: "2px 6px" }}>Stage TBA</span>}
+                    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 7, marginTop: 7 }}>
+                      {sourceAct.stage ? <Pill label={sourceAct.stage.replace(" Stage", "")} color={STAGE_COLOR[sourceAct.stage]} /> : <DashedPill label="Stage TBA" />}
                       {sourceAct.endTime && <span className="np-mono" style={{ fontSize: 11, color: "var(--dim)" }}>ends {sourceAct.endTime}</span>}
                     </div>
                   )}
 
-                  {it.note && !editing && <div style={{ fontSize: 12.5, color: "var(--dim)", lineHeight: 1.45, marginTop: 7, whiteSpace: "pre-wrap" }}>{it.note}</div>}
-                  {!it.note && !editing && <button onClick={() => setEditId(it.id)} className="np-mono" style={{ marginTop: 7, background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 10.5, fontWeight: 600, letterSpacing: ".05em", textTransform: "uppercase", color: "var(--shout)" }}>+ Add note</button>}
+                  {it.note && !editing && <div style={{ fontSize: 12.5, color: "var(--dim)", lineHeight: 1.45, marginTop: 8, whiteSpace: "pre-wrap" }}>{it.note}</div>}
+                  {!it.note && !editing && <button onClick={() => setEditId(it.id)} className="np-mono" style={{ marginTop: 8, background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 10.5, fontWeight: 600, letterSpacing: ".05em", textTransform: "uppercase", color: "var(--shout)" }}>+ Add note</button>}
                 </div>
                 <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                  <button onClick={() => setEditId(editing ? null : it.id)} aria-label="Edit" style={{ ...iconBtn, width: 34, height: 34, background: editing ? "var(--shout)" : "rgba(255,255,255,.06)" }}><Ico n="pencil" s={14} c={editing ? "var(--ink)" : "var(--white)"} /></button>
+                  <button onClick={() => setEditId(editing ? null : it.id)} aria-label="Edit" style={{ ...iconBtn, width: 38, height: 38, background: editing ? "var(--shout)" : "rgba(255,255,255,.06)" }}><Ico n="pencil" s={15} c={editing ? "var(--ink)" : "var(--white)"} /></button>
                   {mapTarget && (
-                    <button onClick={() => setOpenDirId(dirOpen ? null : it.id)} aria-label="Directions" style={{ ...iconBtn, width: 34, height: 34, background: dirOpen ? "var(--shout)" : "rgba(255,255,255,.06)" }}><Ico n="route" s={14} c={dirOpen ? "var(--ink)" : "var(--white)"} /></button>
+                    <button onClick={() => setOpenDirId(dirOpen ? null : it.id)} aria-label="Directions" style={{ ...iconBtn, width: 38, height: 38, background: dirOpen ? "var(--shout)" : "rgba(255,255,255,.06)" }}><Ico n="route" s={16} c={dirOpen ? "var(--ink)" : "var(--white)"} /></button>
                   )}
                   <button onClick={() => del(it.id)} aria-label="Remove" style={ghost}><Ico n="trash" s={15} /></button>
                 </div>
@@ -708,15 +712,10 @@ function Lineup({ trip, days, save }) {
                     <Ico n="star" s={20} c="var(--shout)" fill={a.starred ? "var(--shout)" : "none"} />
                   </button>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.2 }}>{a.artist}</div>
-                    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 7, marginTop: 5 }}>
+                    <div style={{ fontSize: 18.5, fontWeight: 700, lineHeight: 1.2 }}>{a.artist}</div>
+                    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 7, marginTop: 7 }}>
                       <span className="np-mono" style={{ fontSize: 11.5, fontWeight: 600, color: a.time ? "var(--white)" : "var(--dim)" }}>{fmtSlot(a)}</span>
-                      {a.stage && (
-                        <span className="np-mono" style={{ fontSize: 9.8, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink)", background: STAGE_COLOR[a.stage] || "var(--shout)", borderRadius: 999, padding: "3px 7px" }}>
-                          {a.stage.replace(" Stage", "")}
-                        </span>
-                      )}
-                      {!a.stage && <span className="np-mono" style={{ fontSize: 9.8, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--dim)", border: "1px dashed var(--glass-line)", borderRadius: 999, padding: "2px 6px" }}>Stage TBA</span>}
+                      {a.stage ? <Pill label={a.stage.replace(" Stage", "")} color={STAGE_COLOR[a.stage]} /> : <DashedPill label="Stage TBA" />}
                     </div>
                   </div>
                   <button onClick={() => { setOpenPlan(openPlan === a.id ? null : a.id); setPlanned(null); }} aria-label="Add to plans" style={{ ...iconBtn, background: openPlan === a.id ? "var(--shout)" : "rgba(255,255,255,.06)" }}>
@@ -951,6 +950,23 @@ function Places({ trip, days, save }) {
 }
 
 // ---- shared -----------------------------------------------------------------
+// Category / stage badge, shared so every card that shows one — Spots, Lineup,
+// and a sourced Plans item — renders it identically.
+function Pill({ label, color }) {
+  return (
+    <span className="np-mono" style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--ink)", background: color || "var(--shout)", borderRadius: 999, padding: "4px 9px" }}>
+      {label}
+    </span>
+  );
+}
+function DashedPill({ label }) {
+  return (
+    <span className="np-mono" style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--dim)", border: "1px dashed var(--glass-line)", borderRadius: 999, padding: "3px 8px" }}>
+      {label}
+    </span>
+  );
+}
+
 // One saved place. Owns its own expand state so the list does not track it by id.
 function PlaceCard({ p, trip, days, dist, onDelete, onAddToPlan }) {
   const [openDir, setOpenDir] = useState(false);
@@ -964,10 +980,11 @@ function PlaceCard({ p, trip, days, dist, onDelete, onAddToPlan }) {
     <div className="np-card np-pop" style={{ borderRadius: 32, padding: 14 }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <span className="np-mono" style={{ fontSize: 10.3, letterSpacing: ".1em", textTransform: "uppercase", color: TAG_COLOR[p.category] || "var(--shout)", fontWeight: 700 }}>
-            {p.category}{dist != null ? ` · ${dist < 0.1 ? "<0.1" : dist.toFixed(1)} mi` : ""}
-          </span>
-          <div style={{ fontSize: 18.5, fontWeight: 700, lineHeight: 1.2, marginTop: 3 }}>{p.name}</div>
+          <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 7 }}>
+            <Pill label={p.category} color={TAG_COLOR[p.category]} />
+            {dist != null && <span className="np-mono" style={{ fontSize: 11, color: "var(--dim)" }}>{dist < 0.1 ? "<0.1" : dist.toFixed(1)} mi</span>}
+          </div>
+          <div style={{ fontSize: 18.5, fontWeight: 700, lineHeight: 1.2, marginTop: 7 }}>{p.name}</div>
           {p.near && <div className="np-mono" style={{ fontSize: 11, color: "var(--dim)", marginTop: 3 }}>{p.near}</div>}
         </div>
         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
