@@ -95,7 +95,17 @@ const uid = () => Math.random().toString(36).slice(2, 9);
 // What a starred act reads as once it lands in Plans — the stage matters more
 // than the venue here, since every set is at the same Fort Adams address.
 const planTitle = (a) => a.stage ? `${a.artist} — ${a.stage}` : a.artist;
-const fmtSlot = (a) => a.time ? (a.endTime ? `${a.time}–${a.endTime}` : a.time) : "Time TBA";
+// Every stored time is 24h "HH:MM" (native <input type="time"> values); this is
+// only for the plain-text renders — the inputs themselves already show
+// AM/PM per the browser's own locale formatting.
+const fmt12 = (t) => {
+  if (!t) return "";
+  const [h, m] = t.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2, "0")} ${period}`;
+};
+const fmtSlot = (a) => a.time ? (a.endTime ? `${fmt12(a.time)}–${fmt12(a.endTime)}` : fmt12(a.time)) : "Time TBA";
 const KEY = "newportage-v1";
 const APP_VERSION = "1";
 const enc = encodeURIComponent;
@@ -497,7 +507,7 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save, gotoHeader }) {
                 style={{ flexShrink: 0, width: 68, border: "none", borderRight: "1.5px dashed var(--glass-line)", background: "rgba(255,255,255,.06)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "14px 6px" }}>
                 <Ico n={it.fromLineup ? "music" : it.time ? "cal" : "sun"} s={11} c="var(--shout)" />
                 {it.time
-                  ? <span className="np-mono" style={{ fontSize: 13.5, fontWeight: 700, color: "var(--white)", letterSpacing: ".01em" }}>{it.time}</span>
+                  ? <span className="np-mono" style={{ fontSize: 12.5, fontWeight: 700, color: "var(--white)", letterSpacing: ".01em", textAlign: "center", lineHeight: 1.2 }}>{fmt12(it.time)}</span>
                   : <span className="np-mono" style={{ fontSize: 9.5, fontWeight: 700, color: "var(--dim)", letterSpacing: ".06em", textTransform: "uppercase", lineHeight: 1.25 }}>Any<br />time</span>}
               </button>
               <div style={{ flex: 1, minWidth: 0, padding: "12px 10px 12px 14px", display: "flex", alignItems: "flex-start", gap: 6 }}>
@@ -526,7 +536,7 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save, gotoHeader }) {
                   {sourceAct && (
                     <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 7, marginTop: 7 }}>
                       {sourceAct.stage ? <Pill label={sourceAct.stage.replace(" Stage", "")} color={STAGE_COLOR[sourceAct.stage]} /> : <DashedPill label="Stage TBA" />}
-                      {sourceAct.endTime && <span className="np-mono" style={{ fontSize: 11, color: "var(--dim)" }}>ends {sourceAct.endTime}</span>}
+                      {sourceAct.endTime && <span className="np-mono" style={{ fontSize: 11, color: "var(--dim)" }}>ends {fmt12(sourceAct.endTime)}</span>}
                     </div>
                   )}
 
