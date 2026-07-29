@@ -1,13 +1,13 @@
 {
-  "name": "Newportage — Jazz Fest Trip Planner",
+  "name": "Newportage \u2014 Jazz Fest Trip Planner",
   "short_name": "Newportage",
   "description": "Plan your Newport Jazz Fest trip: daily itinerary, festival lineup, and Newport, RI beaches and attractions.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#FAF7F1",
-  "theme_color": "#0F3A4D",
+  "background_color": "#0A0A0A",
+  "theme_color": "#0A0A0A",
   "icons": [
     {
       "src": "icons/icon.svg",

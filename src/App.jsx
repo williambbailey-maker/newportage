@@ -1,25 +1,71 @@
 import React, { useState, useEffect, useRef } from "react";
 
 // ---- styles ---------------------------------------------------------------
-// Modern, simple, coastal-neutral palette — sand, deep ocean navy, sunset coral.
+// Hyper-Saturated Fluid: coral is the one "shout" colour, carrying the liquid
+// hero; everything below sits in a Deep Onyx void on frosted glass. Navy is kept
+// from the original palette as the deep accent. The old sand background is gone.
 const STYLE = `
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 :root{
-  --bg:#F6F3EC; --surface:#FFFFFF; --ink:#16232B; --muted:#707A82;
-  --navy:#0E3A52; --navy2:#124A68; --coral:#FF6B4A; --line:rgba(22,35,43,.11);
+  --shout:#FF6B4A;              /* the 60% colour: saturated, flat, never gradient */
+  --void:#0A0A0A;               /* Deep Onyx */
+  --surface:#171717;            /* Charcoal */
+  --gray:#262626;               /* Deep Gray */
+  --navy:#0E3A52;               /* kept from the original identity */
+  --ink:#0A0A0A;                /* type on the shout colour */
+  --white:#FFFFFF;
+  --dim:rgba(255,255,255,.60);
+  --glass:rgba(255,255,255,.08);
+  --glass-line:rgba(255,255,255,.20);
+  --ease:cubic-bezier(.22,1,.36,1);
 }
 *{box-sizing:border-box;}
-html,body{margin:0;background:var(--bg);-webkit-text-size-adjust:100%;}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,ui-sans-serif,sans-serif;}
-.np-mono{font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;}
-.np-app{min-height:100vh;min-height:100dvh;padding-top:max(10px,env(safe-area-inset-top));padding-bottom:env(safe-area-inset-bottom);}
-.np-card{background:var(--surface);border:1px solid var(--line);}
-.np-in{background:#F5F2EC;border:1px solid var(--line);}
-.np-in:focus{outline:none;border-color:var(--navy);background:#fff;}
-@media (prefers-reduced-motion:no-preference){.np-pop{animation:pop .22s ease;}}
-@keyframes pop{from{opacity:0;transform:translateY(3px);}to{opacity:1;transform:none;}}
-button{font-family:inherit;}
+html,body{margin:0;background:var(--void);-webkit-text-size-adjust:100%;}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,ui-sans-serif,sans-serif;
+  color:var(--white);-webkit-font-smoothing:antialiased;}
+.np-mono{font-family:'Inter',ui-sans-serif,sans-serif;font-variant-numeric:tabular-nums;}
+.np-app{min-height:100vh;min-height:100dvh;background:var(--void);padding-bottom:env(safe-area-inset-bottom);}
+.np-col{max-width:460px;margin:0 auto;padding:0 16px 90px;
+  padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));}
+
+/* Liquid hero — full-bleed shout colour with an asymmetric organic cut */
+.np-hero{background:var(--shout);color:var(--ink);
+  border-radius:0 0 clamp(56px,20vw,120px) 40px;
+  padding:calc(env(safe-area-inset-top) + 26px) 0 34px;}
+.np-hero-in{max-width:460px;margin:0 auto;padding:0 24px;}
+.np-display{font-weight:800;letter-spacing:-.035em;line-height:.94;}
+
+/* Frosted glass — the only card surface in the void */
+.np-card{background:var(--glass);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border:1px solid var(--glass-line);border-radius:32px;
+  box-shadow:0 24px 60px -20px rgba(0,0,0,.85);}
+.np-solid{background:var(--surface);border:1px solid rgba(255,255,255,.10);border-radius:32px;}
+
+/* Tiny functional labels, so the hero type carries the weight */
+.np-label{font-size:10px;text-transform:uppercase;letter-spacing:.18em;font-weight:700;}
+
+.np-in{background:rgba(255,255,255,.06);border:1px solid var(--glass-line);color:var(--white);
+  border-radius:999px;}
+.np-in:focus{outline:none;border-color:var(--shout);background:rgba(255,255,255,.11);}
+textarea.np-in{border-radius:22px;}
+/* Input variant for the coral hero, where the void styling would vanish */
+.np-in-ink{background:rgba(10,10,10,.09);border:1px solid rgba(10,10,10,.18);color:var(--ink);border-radius:999px;color-scheme:light;}
+.np-in-ink:focus{outline:none;border-color:var(--ink);background:rgba(255,255,255,.55);}
+.np-in-ink::placeholder{color:rgba(10,10,10,.42);}
+select.np-in option{background:var(--surface);color:var(--white);}
+input[type="time"].np-in,input[type="date"].np-in{color-scheme:dark;}
+::placeholder{color:rgba(255,255,255,.42);}
+
+button{font-family:inherit;transition:transform .12s var(--ease),background .16s,color .16s,border-color .16s;}
+button:active{transform:scale(.96);}
 input,select,textarea{font-family:inherit;}
-::placeholder{color:var(--muted);opacity:.7;}
+
+@media (prefers-reduced-motion:no-preference){
+  .np-pop{animation:pop .42s var(--ease) both;}
+  .np-float{animation:float 7s ease-in-out infinite;}
+}
+@keyframes pop{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}
 `;
 
 // ---- inline icons ---------------------------------------------------------
@@ -92,11 +138,12 @@ function daysUntil(iso) {
 // remaining announced acts sit on Sunday without a time — tap the pencil to fill
 // them in once the poster drops.
 const STAGES = ["Fort Stage", "Quad Stage", "Harbor Stage", "Foundation Stage"];
+// Poster stage colours, lifted for legibility against the Deep Onyx void.
 const STAGE_COLOR = {
-  "Fort Stage": "#E0526F",
-  "Quad Stage": "#2F9E52",
-  "Harbor Stage": "#3789CE",
-  "Foundation Stage": "#A8873A",
+  "Fort Stage": "#FF5C7C",
+  "Quad Stage": "#3ED47A",
+  "Harbor Stage": "#4FA8FF",
+  "Foundation Stage": "#E5BC53",
 };
 const FEST_VENUE = "Fort Adams State Park";
 const SEED_VERSION = 3;
@@ -164,7 +211,7 @@ const DEFAULT = {
   days: {}, places: [], lineup: [], kingston: [], seededLineup: false, lineupVersion: 0, datesVersion: 0, kingstonVersion: 0,
 };
 const PLACE_CATS = ["Beach", "Eat", "See", "Do", "Sail", "Historic", "Nature", "Shop", "Sweet", "Music", "Scenic"];
-const TAG_COLOR = { Beach: "#0E7C9A", Eat: "#C1502E", See: "#0E3A52", Do: "#8A5A2B", Sail: "#1E6B5C", Historic: "#7A5A2E", Nature: "#3F7A46", Shop: "#7A4A6B", Sweet: "#C16B8E", Music: "#5A4A9E", Scenic: "#3A7A5A" };
+const TAG_COLOR = { Beach: "#22C7E8", Eat: "#FF7A4D", See: "#6BB6E8", Do: "#D89A5C", Sail: "#35D6A8", Historic: "#D4A857", Nature: "#5FD16E", Shop: "#D07AB8", Sweet: "#FF8FB4", Music: "#9B8BFF", Scenic: "#58D19A" };
 const PLACES_VERSION = 2;
 
 // Evergreen Newport, RI + nearby (Middletown, Jamestown) picks — beaches, Gilded
@@ -355,47 +402,48 @@ export default function App() {
 
   if (!loaded)
     return (
-      <div style={{ minHeight: "100vh", background: "var(--bg)", display: "grid", placeItems: "center" }}>
-        <span className="np-mono" style={{ color: "#707A82", fontSize: 13 }}>Loading your trip…</span>
+      <div style={{ minHeight: "100vh", background: "#0A0A0A", display: "grid", placeItems: "center" }}>
+        <style>{STYLE}</style>
+        <span className="np-label" style={{ color: "rgba(255,255,255,.5)" }}>Loading your trip…</span>
       </div>
     );
 
   const TABS = [["itinerary", "cal", "Plans"], ["lineup", "music", "Lineup"], ["places", "pin", "Spots"], ["kingston", "anchor", "Kingston"]];
 
   return (
-    <div className="np-app" style={{ background: "var(--bg)", color: "var(--ink)" }}>
+    <div className="np-app">
       <style>{STYLE}</style>
-      <div style={{ maxWidth: 460, margin: "0 auto", padding: "0 16px 90px", paddingLeft: "max(16px, env(safe-area-inset-left))", paddingRight: "max(16px, env(safe-area-inset-right))" }}>
-        <Header trip={trip} countdown={countdown} editing={editHeader}
-          onEdit={() => setEditHeader(true)} onClose={() => setEditHeader(false)}
-          onSave={(p) => { save({ ...trip, ...p }); setEditHeader(false); }} />
+      <Header trip={trip} countdown={countdown} editing={editHeader}
+        onEdit={() => setEditHeader(true)} onClose={() => setEditHeader(false)}
+        onSave={(p) => { save({ ...trip, ...p }); setEditHeader(false); }} />
 
-        <div className="np-mono" style={{ display: "flex", gap: 4, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, padding: 4, marginTop: 16, position: "sticky", top: 8, zIndex: 5 }}>
+      <div className="np-col">
+        {/* Pill tabs ride up over the hero's liquid edge */}
+        <div className="np-card" style={{ display: "flex", gap: 4, padding: 5, borderRadius: 999, marginTop: -12, position: "sticky", top: 10, zIndex: 5, background: "rgba(10,10,10,.72)" }}>
           {TABS.map(([id, icon, label]) => (
-            <button key={id} onClick={() => setTab(id)}
-              style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "10px 0", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, letterSpacing: ".01em", background: tab === id ? "var(--navy)" : "transparent", color: tab === id ? "#fff" : "var(--muted)", transition: "all .16s" }}>
-              <Ico n={icon} s={14} /> {label}
+            <button key={id} onClick={() => setTab(id)} aria-pressed={tab === id}
+              style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "10px 0", borderRadius: 999, border: "none", cursor: "pointer", fontSize: 11.5, fontWeight: 700, letterSpacing: "-.01em", background: tab === id ? "var(--shout)" : "transparent", color: tab === id ? "var(--ink)" : "rgba(255,255,255,.55)" }}>
+              <Ico n={icon} s={13} w={2.4} /> {label}
             </button>
           ))}
         </div>
 
-        <div style={{ marginTop: 16 }} key={tab} className="np-pop">
+        <div style={{ marginTop: 20 }} key={tab} className="np-pop">
           {tab === "itinerary" && <Itinerary trip={trip} days={days} activeDay={activeDay} setActiveDay={setActiveDay} save={save} gotoHeader={() => setEditHeader(true)} />}
           {tab === "lineup" && <Lineup trip={trip} days={days} save={save} />}
           {tab === "places" && <Places trip={trip} days={days} save={save} />}
           {tab === "kingston" && <Kingston trip={trip} days={days} save={save} />}
         </div>
 
-        <div className="np-mono" style={{ textAlign: "center", marginTop: 24, fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--muted)", opacity: .7 }}>
-          Newportage · v{APP_VERSION}
-        </div>
-        <div style={{ textAlign: "center", marginTop: 10 }}>
+        <div style={{ textAlign: "center", marginTop: 30 }}>
           <a href={`https://www.google.com/maps/search/?api=1&query=${enc(trip.destination || "Newport, RI")}`}
-            target="_blank" rel="noopener noreferrer"
-            className="np-mono"
-            style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--navy)", fontSize: 11, fontWeight: 600, letterSpacing: ".06em", textTransform: "uppercase", textDecoration: "none", border: "1px solid var(--line)", borderRadius: 10, padding: "8px 14px", background: "#fff" }}>
-            <Ico n="pin" s={13} c="var(--navy)" /> Map
+            target="_blank" rel="noopener noreferrer" className="np-label"
+            style={{ display: "inline-flex", alignItems: "center", gap: 7, color: "var(--white)", textDecoration: "none", border: `1px solid var(--glass-line)`, borderRadius: 999, padding: "11px 20px", background: "var(--glass)" }}>
+            <Ico n="pin" s={13} c="var(--shout)" w={2.4} /> Map
           </a>
+        </div>
+        <div className="np-label" style={{ textAlign: "center", marginTop: 18, color: "rgba(255,255,255,.30)" }}>
+          Newportage · v{APP_VERSION}
         </div>
         <DataTools trip={trip} save={save} />
       </div>
@@ -412,53 +460,71 @@ function Header({ trip, countdown, editing, onEdit, onClose, onSave }) {
     ? `${fmtChip(trip.startDate).mo} ${fmtChip(trip.startDate).day} – ${fmtChip(trip.endDate).mo} ${fmtChip(trip.endDate).day}`
     : "Dates not set";
 
+  const onInk = "rgba(10,10,10,.62)";
+
   return (
-    <div className="np-card" style={{ borderRadius: 20, marginTop: 14, overflow: "hidden" }}>
-      <div style={{ height: 5, background: "linear-gradient(90deg, var(--navy), var(--coral))" }} />
-      <div style={{ padding: 18 }}>
+    <div className="np-hero">
+      <div className="np-hero-in">
         {!editing ? (
           <>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <div className="np-mono" style={{ fontSize: 10.5, letterSpacing: ".16em", color: "var(--muted)", textTransform: "uppercase" }}>Trip</div>
-              <button onClick={onEdit} aria-label="Edit trip" style={ghost}><Ico n="pencil" s={15} /></button>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
+              <span className="np-label" style={{ color: onInk }}>{trip.destination || "Newport, RI"}</span>
+              <button onClick={onEdit} aria-label="Edit trip"
+                style={{ background: "rgba(10,10,10,.10)", border: "none", borderRadius: 999, width: 34, height: 34, display: "grid", placeItems: "center", cursor: "pointer", color: "var(--ink)", flexShrink: 0 }}>
+                <Ico n="pencil" s={15} w={2.4} />
+              </button>
             </div>
-            <h1 style={{ fontSize: 28, fontWeight: 700, lineHeight: 1.08, margin: "6px 0 4px", letterSpacing: "-.01em" }}>{trip.name || "Untitled Trip"}</h1>
-            <div className="np-mono" style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--navy)", fontSize: 13, fontWeight: 600 }}>
-              <Ico n="waves" s={13} c="var(--navy)" />{trip.destination || "Add a destination"}
-            </div>
-            {trip.homeBase && (
-              <a href={`https://www.google.com/maps/search/?api=1&query=${enc(trip.homeBase)}`} target="_blank" rel="noopener noreferrer"
-                className="np-mono" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--coral)", fontSize: 11.5, marginTop: 9, textDecoration: "none", border: "1px solid var(--line)", borderRadius: 10, padding: "6px 10px", background: "rgba(255,107,74,.07)" }}>
-                <Ico n="home" s={12} c="var(--coral)" />{trip.homeBase}
-              </a>
-            )}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: 16, borderTop: "1px dashed var(--line)", paddingTop: 12 }}>
+
+            {/* Massive type is the anchor — everything else stays tiny */}
+            <h1 className="np-display" style={{ fontSize: "clamp(40px,12.5vw,60px)", margin: 0 }}>
+              {trip.name || "Untitled Trip"}
+            </h1>
+
+            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, marginTop: 22 }}>
               <div>
-                <div className="np-mono" style={{ fontSize: 9.5, letterSpacing: ".12em", color: "var(--muted)", textTransform: "uppercase" }}>Dates</div>
-                <div className="np-mono" style={{ fontSize: 13.5, fontWeight: 600, marginTop: 3 }}>{range}</div>
+                <div className="np-label" style={{ color: onInk }}>Dates</div>
+                <div style={{ fontSize: 16, fontWeight: 700, marginTop: 5, letterSpacing: "-.01em" }}>{range}</div>
               </div>
               {countdown !== null && (
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 25, fontWeight: 700, color: countdown < 0 ? "var(--muted)" : "var(--coral)", lineHeight: 1 }}>{countdown > 0 ? countdown : countdown === 0 ? "Today" : "—"}</div>
-                  <div className="np-mono" style={{ fontSize: 9.5, letterSpacing: ".1em", color: "var(--muted)", textTransform: "uppercase", marginTop: 2 }}>{countdown > 0 ? "days to go" : countdown === 0 ? "you're off!" : "in progress"}</div>
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  <div className="np-display" style={{ fontSize: countdown > 0 ? 52 : 30 }}>
+                    {countdown > 0 ? countdown : countdown === 0 ? "Today" : "—"}
+                  </div>
+                  <div className="np-label" style={{ color: onInk, marginTop: 3 }}>
+                    {countdown > 1 ? "days to go" : countdown === 1 ? "day to go" : countdown === 0 ? "you're off" : "in progress"}
+                  </div>
                 </div>
               )}
             </div>
+
+            {trip.homeBase && (
+              <a href={`https://www.google.com/maps/search/?api=1&query=${enc(trip.homeBase)}`} target="_blank" rel="noopener noreferrer"
+                className="np-label"
+                style={{ display: "inline-flex", alignItems: "center", gap: 7, marginTop: 20, color: "var(--white)", textDecoration: "none", borderRadius: 999, padding: "11px 18px", background: "var(--ink)" }}>
+                <Ico n="home" s={13} c="var(--shout)" w={2.4} />{trip.homeBase}
+              </a>
+            )}
           </>
         ) : (
-          <div className="np-pop" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div className="np-pop" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span className="np-mono" style={{ fontSize: 11, letterSpacing: ".12em", color: "var(--muted)", textTransform: "uppercase" }}>Edit trip</span>
-              <button onClick={onClose} aria-label="Close" style={ghost}><Ico n="x" s={18} /></button>
+              <span className="np-label" style={{ color: onInk }}>Edit trip</span>
+              <button onClick={onClose} aria-label="Close"
+                style={{ background: "rgba(10,10,10,.10)", border: "none", borderRadius: 999, width: 34, height: 34, display: "grid", placeItems: "center", cursor: "pointer", color: "var(--ink)" }}>
+                <Ico n="x" s={17} w={2.4} />
+              </button>
             </div>
-            <Field label="Trip name"><input className="np-in" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} style={inStyle} /></Field>
-            <Field label="Destination"><input className="np-in" value={f.destination} onChange={(e) => setF({ ...f, destination: e.target.value })} style={inStyle} placeholder="Newport, RI" /></Field>
-            <Field label="Home base"><input className="np-in" value={f.homeBase} onChange={(e) => setF({ ...f, homeBase: e.target.value })} style={inStyle} placeholder="Hotel / address" /></Field>
+            <Field label="Trip name" onShout><input className="np-in-ink" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} style={inkInput} /></Field>
+            <Field label="Destination" onShout><input className="np-in-ink" value={f.destination} onChange={(e) => setF({ ...f, destination: e.target.value })} style={inkInput} placeholder="Newport, RI" /></Field>
+            <Field label="Home base" onShout><input className="np-in-ink" value={f.homeBase} onChange={(e) => setF({ ...f, homeBase: e.target.value })} style={inkInput} placeholder="Hotel / address" /></Field>
             <div style={{ display: "flex", gap: 10 }}>
-              <Field label="Start"><input type="date" className="np-in np-mono" value={f.startDate} onChange={(e) => setF({ ...f, startDate: e.target.value })} style={{ ...inStyle, fontSize: 13 }} /></Field>
-              <Field label="End"><input type="date" className="np-in np-mono" value={f.endDate} min={f.startDate} onChange={(e) => setF({ ...f, endDate: e.target.value })} style={{ ...inStyle, fontSize: 13 }} /></Field>
+              <Field label="Start" onShout><input type="date" className="np-in-ink" value={f.startDate} onChange={(e) => setF({ ...f, startDate: e.target.value })} style={{ ...inkInput, fontSize: 13 }} /></Field>
+              <Field label="End" onShout><input type="date" className="np-in-ink" value={f.endDate} min={f.startDate} onChange={(e) => setF({ ...f, endDate: e.target.value })} style={{ ...inkInput, fontSize: 13 }} /></Field>
             </div>
-            <button onClick={() => onSave(f)} className="np-mono" style={primaryBtn}>Save trip</button>
+            <button onClick={() => onSave(f)} className="np-label"
+              style={{ marginTop: 4, background: "var(--ink)", color: "var(--white)", border: "none", borderRadius: 999, padding: "15px 0", cursor: "pointer" }}>
+              Save trip
+            </button>
           </div>
         )}
       </div>
@@ -497,7 +563,7 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save, gotoHeader }) {
         {days.map((iso) => {
           const c = fmtChip(iso); const on = iso === activeDay; const n = (trip.days[iso] || []).length;
           return (
-            <button key={iso} onClick={() => setActiveDay(iso)} style={{ flex: "0 0 auto", width: 56, padding: "9px 0", borderRadius: 14, cursor: "pointer", border: on ? "1px solid var(--navy)" : "1px solid var(--line)", background: on ? "var(--navy)" : "var(--surface)", color: on ? "#fff" : "var(--ink)", textAlign: "center" }}>
+            <button key={iso} onClick={() => setActiveDay(iso)} style={{ flex: "0 0 auto", width: 56, padding: "9px 0", borderRadius: 28, cursor: "pointer", border: on ? "1px solid var(--shout)" : "1px solid var(--glass-line)", background: on ? "var(--shout)" : "rgba(255,255,255,.06)", color: on ? "var(--ink)" : "var(--white)", textAlign: "center" }}>
               <div className="np-mono" style={{ fontSize: 9.5, letterSpacing: ".08em", opacity: .7, textTransform: "uppercase" }}>{c.wd}</div>
               <div style={{ fontSize: 18, fontWeight: 700, lineHeight: 1.1 }}>{c.day}</div>
               <div className="np-mono" style={{ fontSize: 9, opacity: on ? .85 : .5 }}>{n ? `${n}·plan` : "—"}</div>
@@ -510,47 +576,47 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save, gotoHeader }) {
         : <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{items.map((it) => {
           const editing = editId === it.id;
           return (
-          <div key={it.id} className="np-card np-pop" style={{ borderRadius: 15, overflow: "hidden", padding: 0 }}>
+          <div key={it.id} className="np-card np-pop" style={{ borderRadius: 32, overflow: "hidden", padding: 0 }}>
             <div style={{ display: "flex", alignItems: "stretch" }}>
               <button onClick={() => setEditId(editing ? null : it.id)} aria-label="Edit time"
-                style={{ flexShrink: 0, width: 68, border: "none", borderRight: "1.5px dashed var(--line)", background: "#F5F2EC", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "14px 6px" }}>
-                <Ico n={it.fromLineup ? "music" : it.time ? "cal" : "sun"} s={11} c="var(--coral)" />
+                style={{ flexShrink: 0, width: 68, border: "none", borderRight: "1.5px dashed var(--glass-line)", background: "rgba(255,255,255,.06)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "14px 6px" }}>
+                <Ico n={it.fromLineup ? "music" : it.time ? "cal" : "sun"} s={11} c="var(--shout)" />
                 {it.time
-                  ? <span className="np-mono" style={{ fontSize: 13.5, fontWeight: 700, color: "var(--navy)", letterSpacing: ".01em" }}>{it.time}</span>
-                  : <span className="np-mono" style={{ fontSize: 9.5, fontWeight: 700, color: "var(--muted)", letterSpacing: ".06em", textTransform: "uppercase", lineHeight: 1.25 }}>Any<br />time</span>}
+                  ? <span className="np-mono" style={{ fontSize: 13.5, fontWeight: 700, color: "var(--white)", letterSpacing: ".01em" }}>{it.time}</span>
+                  : <span className="np-mono" style={{ fontSize: 9.5, fontWeight: 700, color: "var(--dim)", letterSpacing: ".06em", textTransform: "uppercase", lineHeight: 1.25 }}>Any<br />time</span>}
               </button>
               <div style={{ flex: 1, minWidth: 0, padding: "12px 10px 12px 14px", display: "flex", alignItems: "flex-start", gap: 6 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.25 }}>{it.title}</div>
-                  {it.note && !editing && <div style={{ fontSize: 12.5, color: "var(--muted)", lineHeight: 1.45, marginTop: 5, whiteSpace: "pre-wrap" }}>{it.note}</div>}
-                  {!it.note && !editing && <button onClick={() => setEditId(it.id)} className="np-mono" style={{ marginTop: 6, background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 10.5, fontWeight: 600, letterSpacing: ".05em", textTransform: "uppercase", color: "var(--coral)" }}>+ Add note</button>}
+                  {it.note && !editing && <div style={{ fontSize: 12.5, color: "var(--dim)", lineHeight: 1.45, marginTop: 5, whiteSpace: "pre-wrap" }}>{it.note}</div>}
+                  {!it.note && !editing && <button onClick={() => setEditId(it.id)} className="np-mono" style={{ marginTop: 6, background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 10.5, fontWeight: 600, letterSpacing: ".05em", textTransform: "uppercase", color: "var(--shout)" }}>+ Add note</button>}
                 </div>
-                <button onClick={() => setEditId(editing ? null : it.id)} aria-label="Edit" style={{ ...iconBtn, width: 34, height: 34, background: editing ? "var(--navy)" : "#F5F2EC" }}><Ico n="pencil" s={14} c={editing ? "#fff" : "var(--navy)"} /></button>
+                <button onClick={() => setEditId(editing ? null : it.id)} aria-label="Edit" style={{ ...iconBtn, width: 34, height: 34, background: editing ? "var(--shout)" : "rgba(255,255,255,.06)" }}><Ico n="pencil" s={14} c={editing ? "var(--ink)" : "var(--white)"} /></button>
                 <button onClick={() => del(it.id)} aria-label="Remove" style={ghost}><Ico n="trash" s={15} /></button>
               </div>
             </div>
             {editing && (
-              <div className="np-pop" style={{ borderTop: "1.5px dashed var(--line)", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+              <div className="np-pop" style={{ borderTop: "1.5px dashed var(--glass-line)", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                  <span className="np-mono" style={{ fontSize: 10, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted)" }}>Time</span>
-                  <input type="time" value={it.time || ""} onChange={(e) => update(it.id, { time: e.target.value })} disabled={!it.time} className="np-in np-mono" style={{ ...inStyle, width: 120, fontSize: 13, padding: "9px 8px", opacity: it.time ? 1 : .45 }} />
+                  <span className="np-mono" style={{ fontSize: 10, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--dim)" }}>Time</span>
+                  <input type="time" value={it.time || ""} onChange={(e) => update(it.id, { time: e.target.value })} disabled={!it.time} className="np-in np-mono" style={{ ...inStyle, width: 138, fontSize: 13, padding: "11px 14px", opacity: it.time ? 1 : .45 }} />
                   <button onClick={() => update(it.id, { time: it.time ? "" : "12:00" })} className="np-mono"
-                    style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", padding: "8px 11px", borderRadius: 9, cursor: "pointer", border: `1px solid ${!it.time ? "var(--coral)" : "var(--line)"}`, background: !it.time ? "var(--coral)" : "transparent", color: !it.time ? "#fff" : "var(--muted)" }}>
+                    style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", padding: "8px 11px", borderRadius: 999, cursor: "pointer", border: `1px solid ${!it.time ? "var(--shout)" : "var(--glass-line)"}`, background: !it.time ? "var(--shout)" : "transparent", color: !it.time ? "var(--ink)" : "var(--dim)" }}>
                     Any time
                   </button>
                 </div>
                 <textarea value={it.note || ""} onChange={(e) => update(it.id, { note: e.target.value })} placeholder="Add a note — confirmation #, who's coming, what to bring…" rows={3} className="np-in" style={{ ...inStyle, resize: "vertical", lineHeight: 1.45, minHeight: 64 }} />
-                <button onClick={() => setEditId(null)} className="np-mono" style={{ alignSelf: "flex-start", background: "var(--navy)", color: "#fff", border: "none", borderRadius: 10, padding: "8px 18px", fontSize: 12, fontWeight: 600, cursor: "pointer", letterSpacing: ".01em" }}>Done</button>
+                <button onClick={() => setEditId(null)} className="np-mono" style={{ alignSelf: "flex-start", background: "var(--shout)", color: "var(--ink)", border: "none", borderRadius: 999, padding: "8px 18px", fontSize: 12, fontWeight: 600, cursor: "pointer", letterSpacing: ".01em" }}>Done</button>
               </div>
             )}
           </div>);
         })}
         </div>}
-      <div className="np-card" style={{ borderRadius: 14, padding: 10, marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
+      <div className="np-card" style={{ borderRadius: 28, padding: 10, marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} disabled={allDay} className="np-in np-mono" style={{ ...inStyle, width: 90, fontSize: 12.5, padding: "9px 8px", opacity: allDay ? .45 : 1 }} />
+          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} disabled={allDay} className="np-in np-mono" style={{ ...inStyle, width: 132, fontSize: 12.5, padding: "11px 14px", opacity: allDay ? .45 : 1 }} />
           <button onClick={() => setAllDay((v) => !v)} aria-pressed={allDay} className="np-mono"
-            style={{ flex: 1, fontSize: 10.5, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", padding: "10px 8px", borderRadius: 9, cursor: "pointer", border: `1px solid ${allDay ? "var(--coral)" : "var(--line)"}`, background: allDay ? "var(--coral)" : "transparent", color: allDay ? "#fff" : "var(--muted)" }}>
+            style={{ flex: 1, fontSize: 10.5, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", padding: "10px 8px", borderRadius: 999, cursor: "pointer", border: `1px solid ${allDay ? "var(--shout)" : "var(--glass-line)"}`, background: allDay ? "var(--shout)" : "transparent", color: allDay ? "var(--ink)" : "var(--dim)" }}>
             Any time
           </button>
         </div>
@@ -625,13 +691,13 @@ function Lineup({ trip, days, save }) {
 
   return (
     <>
-      <div className="np-card" style={{ borderRadius: 15, padding: "14px 16px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div className="np-card" style={{ borderRadius: 32, padding: "14px 16px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <div className="np-mono" style={{ fontSize: 10, letterSpacing: ".14em", color: "var(--coral)", textTransform: "uppercase" }}>Festival</div>
+          <div className="np-mono" style={{ fontSize: 10, letterSpacing: ".14em", color: "var(--shout)", textTransform: "uppercase" }}>Festival</div>
           <div style={{ fontSize: 19, fontWeight: 700, lineHeight: 1.1 }}>{onlyStar ? "Your must-sees" : "Who's playing"}</div>
         </div>
-        <button onClick={() => setOnlyStar((v) => !v)} aria-pressed={onlyStar} className="np-mono" style={{ display: "flex", alignItems: "center", gap: 5, border: "1px solid var(--line)", background: onlyStar ? "var(--coral)" : "transparent", color: onlyStar ? "#fff" : "var(--muted)", borderRadius: 10, padding: "7px 11px", fontSize: 11, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
-          <Ico n="star" s={13} c={onlyStar ? "#fff" : "var(--coral)"} fill={onlyStar ? "#fff" : "none"} /> {onlyStar ? "Must-see" : "All sets"}
+        <button onClick={() => setOnlyStar((v) => !v)} aria-pressed={onlyStar} className="np-mono" style={{ display: "flex", alignItems: "center", gap: 5, border: "1px solid var(--glass-line)", background: onlyStar ? "var(--shout)" : "transparent", color: onlyStar ? "var(--ink)" : "var(--dim)", borderRadius: 999, padding: "7px 11px", fontSize: 11, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
+          <Ico n="star" s={13} c={onlyStar ? "var(--ink)" : "var(--shout)"} fill={onlyStar ? "#fff" : "none"} /> {onlyStar ? "Must-see" : "All sets"}
         </button>
       </div>
 
@@ -639,10 +705,10 @@ function Lineup({ trip, days, save }) {
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
           {["All", ...presentStages].map((s) => {
             const on = stageFilter === s;
-            const col = s === "All" ? "var(--navy)" : (STAGE_COLOR[s] || "var(--navy)");
+            const col = s === "All" ? "var(--shout)" : (STAGE_COLOR[s] || "var(--shout)");
             return (
               <button key={s} onClick={() => setStageFilter(s)} className="np-mono"
-                style={{ fontSize: 11.3, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase", padding: "7px 11px", borderRadius: 10, cursor: "pointer", border: `1px solid ${on ? col : "var(--line)"}`, background: on ? col : "var(--surface)", color: on ? "#fff" : "var(--ink)", transition: "all .15s" }}>
+                style={{ fontSize: 11.3, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase", padding: "7px 11px", borderRadius: 999, cursor: "pointer", border: `1px solid ${on ? col : "var(--glass-line)"}`, background: on ? col : "rgba(255,255,255,.06)", color: on ? "var(--ink)" : "var(--white)", transition: "all .15s" }}>
                 {s === "All" ? "All stages" : s.replace(" Stage", "")}
               </button>
             );
@@ -661,40 +727,40 @@ function Lineup({ trip, days, save }) {
 
       {keys.map((k) => (
         <div key={k} style={{ marginBottom: 16 }}>
-          <div className="np-mono" style={{ fontSize: 10.5, letterSpacing: ".12em", color: "var(--muted)", textTransform: "uppercase", marginBottom: 8 }}>
+          <div className="np-mono" style={{ fontSize: 10.5, letterSpacing: ".12em", color: "var(--dim)", textTransform: "uppercase", marginBottom: 8 }}>
             {k === "Unscheduled" ? "Unscheduled — check the poster" : `${fmtChip(k).wd} · ${fmtChip(k).mo} ${fmtChip(k).day}`}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
             {groups[k].slice().sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99")).map((a) => {
               const editing = editId === a.id;
               return (
-              <div key={a.id} className="np-card np-pop" style={{ borderRadius: 15, padding: 14 }}>
+              <div key={a.id} className="np-card np-pop" style={{ borderRadius: 32, padding: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
                   <button onClick={() => star(a.id)} aria-label="Star" style={{ ...ghost, flexShrink: 0 }}>
-                    <Ico n="star" s={20} c="var(--coral)" fill={a.starred ? "var(--coral)" : "none"} />
+                    <Ico n="star" s={20} c="var(--shout)" fill={a.starred ? "var(--shout)" : "none"} />
                   </button>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.2 }}>{a.artist}</div>
                     <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 7, marginTop: 5 }}>
-                      <span className="np-mono" style={{ fontSize: 11.5, fontWeight: 600, color: a.time ? "var(--ink)" : "var(--muted)" }}>{fmtSlot(a)}</span>
+                      <span className="np-mono" style={{ fontSize: 11.5, fontWeight: 600, color: a.time ? "var(--white)" : "var(--dim)" }}>{fmtSlot(a)}</span>
                       {a.stage && (
-                        <span className="np-mono" style={{ fontSize: 9.8, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#fff", background: STAGE_COLOR[a.stage] || "var(--navy)", borderRadius: 6, padding: "3px 7px" }}>
+                        <span className="np-mono" style={{ fontSize: 9.8, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink)", background: STAGE_COLOR[a.stage] || "var(--shout)", borderRadius: 999, padding: "3px 7px" }}>
                           {a.stage.replace(" Stage", "")}
                         </span>
                       )}
-                      {!a.stage && <span className="np-mono" style={{ fontSize: 9.8, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--muted)", border: "1px dashed var(--line)", borderRadius: 6, padding: "2px 6px" }}>Stage TBA</span>}
+                      {!a.stage && <span className="np-mono" style={{ fontSize: 9.8, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--dim)", border: "1px dashed var(--glass-line)", borderRadius: 999, padding: "2px 6px" }}>Stage TBA</span>}
                     </div>
                   </div>
-                  <button onClick={() => setEditId(editing ? null : a.id)} aria-label="Edit" style={{ ...iconBtn, background: editing ? "var(--navy)" : "#F5F2EC" }}><Ico n="pencil" s={14} c={editing ? "#fff" : "var(--navy)"} /></button>
+                  <button onClick={() => setEditId(editing ? null : a.id)} aria-label="Edit" style={{ ...iconBtn, background: editing ? "var(--shout)" : "rgba(255,255,255,.06)" }}><Ico n="pencil" s={14} c={editing ? "var(--ink)" : "var(--white)"} /></button>
                   {a.venue && (
-                    <button onClick={() => setOpenDir(openDir === a.id ? null : a.id)} aria-label="Directions" style={{ ...iconBtn, background: openDir === a.id ? "var(--navy)" : "#F5F2EC" }}>
-                      <Ico n="route" s={16} c={openDir === a.id ? "#fff" : "var(--navy)"} />
+                    <button onClick={() => setOpenDir(openDir === a.id ? null : a.id)} aria-label="Directions" style={{ ...iconBtn, background: openDir === a.id ? "var(--shout)" : "rgba(255,255,255,.06)" }}>
+                      <Ico n="route" s={16} c={openDir === a.id ? "var(--ink)" : "var(--white)"} />
                     </button>
                   )}
                   <button onClick={() => del(a.id)} aria-label="Remove" style={ghost}><Ico n="trash" s={15} /></button>
                 </div>
                 {editing && (
-                  <div className="np-pop" style={{ marginTop: 12, borderTop: "1.5px dashed var(--line)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div className="np-pop" style={{ marginTop: 12, borderTop: "1.5px dashed var(--glass-line)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
                     <input value={a.artist} onChange={(e) => updateAct(a.id, { artist: e.target.value })} placeholder="Artist / act" className="np-in" style={inStyle} />
                     <select value={a.stage || ""} onChange={(e) => updateAct(a.id, { stage: e.target.value })} className="np-in np-mono" style={{ ...inStyle, fontSize: 12.5 }}>
                       <option value="">Stage TBA</option>
@@ -707,12 +773,12 @@ function Lineup({ trip, days, save }) {
                       </select>
                     </div>
                     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      <span className="np-mono" style={{ fontSize: 10, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--muted)", flexShrink: 0 }}>Set</span>
+                      <span className="np-mono" style={{ fontSize: 10, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--dim)", flexShrink: 0 }}>Set</span>
                       <input type="time" value={a.time || ""} onChange={(e) => updateAct(a.id, { time: e.target.value })} className="np-in np-mono" style={{ ...inStyle, flex: 1, fontSize: 12.5 }} />
-                      <span className="np-mono" style={{ color: "var(--muted)", flexShrink: 0 }}>–</span>
+                      <span className="np-mono" style={{ color: "var(--dim)", flexShrink: 0 }}>–</span>
                       <input type="time" value={a.endTime || ""} onChange={(e) => updateAct(a.id, { endTime: e.target.value })} className="np-in np-mono" style={{ ...inStyle, flex: 1, fontSize: 12.5 }} />
                     </div>
-                    <button onClick={() => setEditId(null)} className="np-mono" style={{ alignSelf: "flex-start", background: "var(--navy)", color: "#fff", border: "none", borderRadius: 10, padding: "8px 18px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Done</button>
+                    <button onClick={() => setEditId(null)} className="np-mono" style={{ alignSelf: "flex-start", background: "var(--shout)", color: "var(--ink)", border: "none", borderRadius: 999, padding: "8px 18px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Done</button>
                   </div>
                 )}
                 {openDir === a.id && a.venue && <MapPanel from={trip.homeBase} to={`${a.venue} ${trip.destination || ""}`} />}
@@ -723,7 +789,7 @@ function Lineup({ trip, days, save }) {
         </div>
       ))}
 
-      <div className="np-card" style={{ borderRadius: 14, padding: 12, marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
+      <div className="np-card" style={{ borderRadius: 28, padding: 12, marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
         <input value={artist} onChange={(e) => setArtist(e.target.value)} placeholder="Artist / act" className="np-in" style={inStyle} />
         <select value={stage} onChange={(e) => setStage(e.target.value)} className="np-in np-mono" style={{ ...inStyle, fontSize: 12.5 }}>
           <option value="">Stage TBA</option>
@@ -738,7 +804,7 @@ function Lineup({ trip, days, save }) {
           ) : (
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="np-in np-mono" style={{ ...inStyle, flex: 1, fontSize: 12.5 }} />
           )}
-          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="np-in np-mono" style={{ ...inStyle, width: 96, fontSize: 12.5 }} />
+          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="np-in np-mono" style={{ ...inStyle, width: 128, fontSize: 12.5 }} />
           <button onClick={add} aria-label="Add act" style={addBtn}><Ico n="plus" s={18} c="#fff" /></button>
         </div>
       </div>
@@ -831,24 +897,24 @@ function Places({ trip, days, save }) {
   return (
     <>
       <button onClick={findNearby} disabled={locating} className="np-mono"
-        style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 14, borderRadius: 13, padding: "12px 0", fontSize: 13.5, fontWeight: 600, cursor: locating ? "default" : "pointer", border: "1px solid var(--line)", background: showNearby ? "var(--navy)" : "var(--surface)", color: showNearby ? "#fff" : "var(--navy)", letterSpacing: ".01em" }}>
-        <Ico n="locate" s={15} c={showNearby ? "#fff" : "var(--navy)"} />
+        style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 14, borderRadius: 26, padding: "12px 0", fontSize: 13.5, fontWeight: 600, cursor: locating ? "default" : "pointer", border: "1px solid var(--glass-line)", background: showNearby ? "var(--shout)" : "rgba(255,255,255,.06)", color: showNearby ? "var(--ink)" : "var(--white)", letterSpacing: ".01em" }}>
+        <Ico n="locate" s={15} c={showNearby ? "var(--ink)" : "var(--white)"} />
         {locating ? "Finding spots near you…" : showNearby ? "Show all spots" : "Find spots near me (within 3 mi)"}
       </button>
 
       {locErr && !locating && (
-        <div className="np-card" style={{ borderRadius: 13, padding: 13, marginBottom: 12, fontSize: 13.5, color: "var(--muted)", lineHeight: 1.45 }}>{locErr}</div>
+        <div className="np-card" style={{ borderRadius: 26, padding: 13, marginBottom: 12, fontSize: 13.5, color: "var(--dim)", lineHeight: 1.45 }}>{locErr}</div>
       )}
 
       {presentCats.length > 1 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
           {["All", ...presentCats].map((c) => {
             const on = filterCat === c;
-            const col = c === "All" ? "var(--navy)" : (TAG_COLOR[c] || "var(--navy)");
+            const col = c === "All" ? "var(--shout)" : (TAG_COLOR[c] || "var(--shout)");
             const count = c === "All" ? baseList.length : baseList.filter((p) => p.category === c).length;
             return (
               <button key={c} onClick={() => setFilterCat(c)} className="np-mono"
-                style={{ fontSize: 11.3, fontWeight: 600, letterSpacing: ".05em", textTransform: "uppercase", padding: "7px 11px", borderRadius: 10, cursor: "pointer", border: `1px solid ${on ? col : "var(--line)"}`, background: on ? col : "var(--surface)", color: on ? "#fff" : "var(--ink)", transition: "all .15s" }}>
+                style={{ fontSize: 11.3, fontWeight: 600, letterSpacing: ".05em", textTransform: "uppercase", padding: "7px 11px", borderRadius: 999, cursor: "pointer", border: `1px solid ${on ? col : "var(--glass-line)"}`, background: on ? col : "rgba(255,255,255,.06)", color: on ? "var(--ink)" : "var(--white)", transition: "all .15s" }}>
                 {c}{c !== "All" ? ` ${count}` : ""}
               </button>
             );
@@ -857,7 +923,7 @@ function Places({ trip, days, save }) {
       )}
 
       {showNearby && nearby.length > 0 && (
-        <div className="np-mono" style={{ fontSize: 11.3, letterSpacing: ".12em", color: "var(--coral)", textTransform: "uppercase", marginBottom: 10 }}>
+        <div className="np-mono" style={{ fontSize: 11.3, letterSpacing: ".12em", color: "var(--shout)", textTransform: "uppercase", marginBottom: 10 }}>
           Close by · {nearby.length} within {RADIUS_MI} mi
         </div>
       )}
@@ -876,10 +942,10 @@ function Places({ trip, days, save }) {
       </div>
 
       {!showNearby && (
-        <div className="np-card" style={{ borderRadius: 14, padding: 10, marginTop: 14 }}>
+        <div className="np-card" style={{ borderRadius: 28, padding: 10, marginTop: 14 }}>
           <div style={{ display: "flex", gap: 6, marginBottom: 9, flexWrap: "wrap" }}>
             {PLACE_CATS.map((c) => (
-              <button key={c} onClick={() => setCat(c)} className="np-mono" style={{ flex: "1 0 18%", fontSize: 11.6, padding: "6px 0", borderRadius: 8, cursor: "pointer", border: "1px solid var(--line)", background: cat === c ? "var(--navy)" : "transparent", color: cat === c ? "#fff" : "var(--muted)" }}>{c}</button>
+              <button key={c} onClick={() => setCat(c)} className="np-mono" style={{ flex: "1 0 18%", fontSize: 11.6, padding: "6px 0", borderRadius: 999, cursor: "pointer", border: "1px solid var(--glass-line)", background: cat === c ? "var(--shout)" : "transparent", color: cat === c ? "var(--ink)" : "var(--dim)" }}>{c}</button>
             ))}
           </div>
           <div style={{ display: "flex", gap: 8 }}>
@@ -910,18 +976,18 @@ function Kingston({ trip, days, save }) {
 
   return (
     <>
-      <div className="np-card" style={{ borderRadius: 15, padding: "14px 16px", marginBottom: 16 }}>
-        <div className="np-mono" style={{ fontSize: 10, letterSpacing: ".14em", color: "var(--coral)", textTransform: "uppercase" }}>Day trip</div>
+      <div className="np-card" style={{ borderRadius: 32, padding: "14px 16px", marginBottom: 16 }}>
+        <div className="np-mono" style={{ fontSize: 10, letterSpacing: ".14em", color: "var(--shout)", textTransform: "uppercase" }}>Day trip</div>
         <div style={{ fontSize: 19, fontWeight: 700, lineHeight: 1.1, marginTop: 2 }}>North Kingstown & around</div>
-        <div style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5, marginTop: 7 }}>
+        <div style={{ fontSize: 13, color: "var(--dim)", lineHeight: 1.5, marginTop: 7 }}>
           Everything here is within about 10 miles of North Kingstown — roughly a 30-minute
           drive from Newport over the Newport and Jamestown bridges. Wickford Village is the
           anchor; the rest fans out from there.
         </div>
         <a href={`https://www.google.com/maps/dir/?api=1&origin=${enc(trip.homeBase || trip.destination || "Newport, RI")}&destination=${enc("Wickford Village, North Kingstown, RI")}`}
           target="_blank" rel="noopener noreferrer" className="np-mono"
-          style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 11, color: "var(--navy)", fontSize: 11.5, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase", textDecoration: "none", border: "1px solid var(--line)", borderRadius: 10, padding: "8px 12px", background: "#F5F2EC" }}>
-          <Ico n="route" s={13} c="var(--navy)" /> Drive up from home base
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 11, color: "var(--white)", fontSize: 11.5, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase", textDecoration: "none", border: "1px solid var(--glass-line)", borderRadius: 999, padding: "8px 12px", background: "rgba(255,255,255,.06)" }}>
+          <Ico n="route" s={13} c="var(--white)" /> Drive up from home base
         </a>
       </div>
 
@@ -934,10 +1000,10 @@ function Kingston({ trip, days, save }) {
         ))}
       </div>
 
-      <div className="np-card" style={{ borderRadius: 14, padding: 10, marginTop: 14 }}>
+      <div className="np-card" style={{ borderRadius: 28, padding: 10, marginTop: 14 }}>
         <div style={{ display: "flex", gap: 6, marginBottom: 9, flexWrap: "wrap" }}>
           {PLACE_CATS.map((c) => (
-            <button key={c} onClick={() => setCat(c)} className="np-mono" style={{ flex: "1 0 18%", fontSize: 11.6, padding: "6px 0", borderRadius: 8, cursor: "pointer", border: "1px solid var(--line)", background: cat === c ? "var(--navy)" : "transparent", color: cat === c ? "#fff" : "var(--muted)" }}>{c}</button>
+            <button key={c} onClick={() => setCat(c)} className="np-mono" style={{ flex: "1 0 18%", fontSize: 11.6, padding: "6px 0", borderRadius: 999, cursor: "pointer", border: "1px solid var(--glass-line)", background: cat === c ? "var(--shout)" : "transparent", color: cat === c ? "var(--ink)" : "var(--dim)" }}>{c}</button>
           ))}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
@@ -961,47 +1027,47 @@ function PlaceCard({ p, trip, days, dist, onDelete, onAddToPlan }) {
   const region = p.near || trip.destination || "";
 
   return (
-    <div className="np-card np-pop" style={{ borderRadius: 15, padding: 14 }}>
+    <div className="np-card np-pop" style={{ borderRadius: 32, padding: 14 }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <span className="np-mono" style={{ fontSize: 10.3, letterSpacing: ".1em", textTransform: "uppercase", color: TAG_COLOR[p.category] || "var(--navy)", fontWeight: 700 }}>
+          <span className="np-mono" style={{ fontSize: 10.3, letterSpacing: ".1em", textTransform: "uppercase", color: TAG_COLOR[p.category] || "var(--shout)", fontWeight: 700 }}>
             {p.category}{dist != null ? ` · ${dist < 0.1 ? "<0.1" : dist.toFixed(1)} mi` : ""}
           </span>
           <div style={{ fontSize: 18.5, fontWeight: 700, lineHeight: 1.2, marginTop: 3 }}>{p.name}</div>
-          {p.near && <div className="np-mono" style={{ fontSize: 11, color: "var(--muted)", marginTop: 3 }}>{p.near}</div>}
+          {p.near && <div className="np-mono" style={{ fontSize: 11, color: "var(--dim)", marginTop: 3 }}>{p.near}</div>}
         </div>
         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-          <button onClick={() => { setOpenPlan((v) => !v); setAddedTo(null); }} aria-label="Add to plans" style={{ ...iconBtn, width: 38, height: 38, background: openPlan ? "var(--navy)" : "#F5F2EC" }}>
-            <Ico n="cal" s={16} c={openPlan ? "#fff" : "var(--navy)"} />
+          <button onClick={() => { setOpenPlan((v) => !v); setAddedTo(null); }} aria-label="Add to plans" style={{ ...iconBtn, width: 38, height: 38, background: openPlan ? "var(--shout)" : "rgba(255,255,255,.06)" }}>
+            <Ico n="cal" s={16} c={openPlan ? "var(--ink)" : "var(--white)"} />
           </button>
-          <button onClick={() => setOpenDir((v) => !v)} aria-label="Directions" style={{ ...iconBtn, width: 38, height: 38, background: openDir ? "var(--navy)" : "#F5F2EC" }}>
-            <Ico n="route" s={16} c={openDir ? "#fff" : "var(--navy)"} />
+          <button onClick={() => setOpenDir((v) => !v)} aria-label="Directions" style={{ ...iconBtn, width: 38, height: 38, background: openDir ? "var(--shout)" : "rgba(255,255,255,.06)" }}>
+            <Ico n="route" s={16} c={openDir ? "var(--ink)" : "var(--white)"} />
           </button>
           <button onClick={onDelete} aria-label="Remove" style={ghost}><Ico n="trash" s={15} /></button>
         </div>
       </div>
-      {p.summary && <div style={{ fontSize: 13.5, color: "var(--muted)", lineHeight: 1.5, marginTop: 9 }}>{p.summary}</div>}
+      {p.summary && <div style={{ fontSize: 13.5, color: "var(--dim)", lineHeight: 1.5, marginTop: 9 }}>{p.summary}</div>}
       {p.url && (
-        <a href={p.url} target="_blank" rel="noopener noreferrer" className="np-mono" style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 8, fontSize: 11.9, fontWeight: 600, color: "var(--coral)", textDecoration: "none", letterSpacing: ".03em", textTransform: "uppercase" }}>
+        <a href={p.url} target="_blank" rel="noopener noreferrer" className="np-mono" style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 8, fontSize: 11.9, fontWeight: 600, color: "var(--shout)", textDecoration: "none", letterSpacing: ".03em", textTransform: "uppercase" }}>
           More info ↗
         </a>
       )}
       {openPlan && (
-        <div className="np-pop" style={{ marginTop: 11, borderTop: "1px solid var(--line)", paddingTop: 11 }}>
-          <div className="np-mono" style={{ fontSize: 10.8, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 8 }}>Add to a day</div>
+        <div className="np-pop" style={{ marginTop: 11, borderTop: "1px solid var(--glass-line)", paddingTop: 11 }}>
+          <div className="np-mono" style={{ fontSize: 10.8, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--dim)", marginBottom: 8 }}>Add to a day</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {days.map((iso) => {
               const ch = fmtChip(iso);
               const on = addedTo === iso;
               return (
-                <button key={iso} onClick={() => { onAddToPlan(p, iso); setAddedTo(iso); }} className="np-mono" style={{ fontSize: 11.9, padding: "7px 11px", borderRadius: 10, cursor: "pointer", border: "1px solid var(--line)", background: on ? "var(--navy)" : "var(--surface)", color: on ? "#fff" : "var(--navy)" }}>
+                <button key={iso} onClick={() => { onAddToPlan(p, iso); setAddedTo(iso); }} className="np-mono" style={{ fontSize: 11.9, padding: "7px 11px", borderRadius: 999, cursor: "pointer", border: "1px solid var(--glass-line)", background: on ? "var(--shout)" : "rgba(255,255,255,.06)", color: on ? "var(--ink)" : "var(--white)" }}>
                   {ch.wd} {ch.mo} {ch.day}
                 </button>
               );
             })}
           </div>
           {addedTo && (
-            <div className="np-mono" style={{ fontSize: 11.9, color: "var(--coral)", marginTop: 9, lineHeight: 1.4 }}>
+            <div className="np-mono" style={{ fontSize: 11.9, color: "var(--shout)", marginTop: 9, lineHeight: 1.4 }}>
               Added to your Plans as an any-time item — open Plans to give it a time.
             </div>
           )}
@@ -1022,16 +1088,16 @@ function MapPanel({ from, to }) {
     : `https://www.google.com/maps/search/?api=1&query=${enc(dest)}`;
   return (
     <div className="np-pop" style={{ marginTop: 10 }}>
-      <div style={{ borderRadius: 13, overflow: "hidden", border: "1px solid var(--line)", background: "#F5F2EC" }}>
+      <div style={{ borderRadius: 26, overflow: "hidden", border: "1px solid var(--glass-line)", background: "rgba(255,255,255,.06)" }}>
         <iframe title={`Map to ${dest}`} src={src} loading="lazy"
           style={{ width: "100%", height: 190, border: 0, display: "block" }} />
       </div>
       <a href={ext} target="_blank" rel="noopener noreferrer" className="np-mono"
-        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, marginTop: 8, background: "var(--navy)", color: "#fff", borderRadius: 11, padding: "11px 0", fontSize: 12.5, fontWeight: 600, textDecoration: "none", letterSpacing: ".01em" }}>
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, marginTop: 8, background: "var(--shout)", color: "#fff", borderRadius: 999, padding: "11px 0", fontSize: 12.5, fontWeight: 600, textDecoration: "none", letterSpacing: ".01em" }}>
         <Ico n="route" s={15} c="#fff" /> Directions in Google Maps
       </a>
       {from && (
-        <div className="np-mono" style={{ fontSize: 10, color: "var(--muted)", textAlign: "center", marginTop: 6 }}>
+        <div className="np-mono" style={{ fontSize: 10, color: "var(--dim)", textAlign: "center", marginTop: 6 }}>
           from {from}
         </div>
       )}
@@ -1058,53 +1124,60 @@ function DataTools({ trip, save }) {
   if (!open)
     return (
       <div style={{ textAlign: "center", marginTop: 10 }}>
-        <button onClick={() => setOpen(true)} className="np-mono" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 9.5, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--muted)", opacity: .8 }}>Backup &amp; restore</button>
+        <button onClick={() => setOpen(true)} className="np-mono" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 9.5, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--dim)", opacity: .8 }}>Backup &amp; restore</button>
       </div>
     );
   return (
-    <div className="np-card np-pop" style={{ borderRadius: 15, padding: 14, marginTop: 12 }}>
+    <div className="np-card np-pop" style={{ borderRadius: 32, padding: 14, marginTop: 12 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-        <span className="np-mono" style={{ fontSize: 10, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted)" }}>Backup &amp; restore</span>
+        <span className="np-mono" style={{ fontSize: 10, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--dim)" }}>Backup &amp; restore</span>
         <button onClick={() => { setOpen(false); setMsg(""); }} aria-label="Close" style={ghost}><Ico n="x" s={15} /></button>
       </div>
-      <div style={{ fontSize: 12, color: "var(--muted)", lineHeight: 1.5, marginBottom: 11 }}>
+      <div style={{ fontSize: 12, color: "var(--dim)", lineHeight: 1.5, marginBottom: 11 }}>
         Your edits already save on this device. Use this to keep a copy you control — handy before an update, or to move your trip to another device.
       </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <button onClick={copy} className="np-mono" style={{ flex: 1, minWidth: 130, background: "var(--navy)", color: "#fff", border: "none", borderRadius: 10, padding: "10px 12px", fontSize: 11.5, fontWeight: 600, cursor: "pointer" }}>Copy backup</button>
-        <button onClick={restore} disabled={!text.trim()} className="np-mono" style={{ flex: 1, minWidth: 130, background: text.trim() ? "var(--coral)" : "#F5F2EC", color: text.trim() ? "#fff" : "var(--muted)", border: "none", borderRadius: 10, padding: "10px 12px", fontSize: 11.5, fontWeight: 600, cursor: text.trim() ? "pointer" : "default" }}>Restore from text</button>
+        <button onClick={copy} className="np-mono" style={{ flex: 1, minWidth: 130, background: "var(--shout)", color: "var(--ink)", border: "none", borderRadius: 999, padding: "10px 12px", fontSize: 11.5, fontWeight: 600, cursor: "pointer" }}>Copy backup</button>
+        <button onClick={restore} disabled={!text.trim()} className="np-mono" style={{ flex: 1, minWidth: 130, background: text.trim() ? "var(--shout)" : "rgba(255,255,255,.06)", color: text.trim() ? "#fff" : "var(--dim)", border: "none", borderRadius: 999, padding: "10px 12px", fontSize: 11.5, fontWeight: 600, cursor: text.trim() ? "pointer" : "default" }}>Restore from text</button>
       </div>
-      {msg && <div className="np-mono" style={{ fontSize: 11, color: "var(--coral)", marginTop: 10, lineHeight: 1.4 }}>{msg}</div>}
+      {msg && <div className="np-mono" style={{ fontSize: 11, color: "var(--shout)", marginTop: 10, lineHeight: 1.4 }}>{msg}</div>}
       <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Paste a backup here to restore it…" rows={3} className="np-in np-mono" style={{ ...inStyle, marginTop: 10, resize: "vertical", fontSize: 11, lineHeight: 1.4, minHeight: 58, width: "100%", boxSizing: "border-box" }} />
-      <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 9, marginBottom: 4 }}>Or copy your current backup from here:</div>
-      <textarea readOnly value={backup} onFocus={(e) => e.target.select()} rows={3} className="np-in np-mono" style={{ ...inStyle, resize: "vertical", fontSize: 10, lineHeight: 1.35, minHeight: 50, width: "100%", boxSizing: "border-box", color: "var(--muted)" }} />
+      <div style={{ fontSize: 11, color: "var(--dim)", marginTop: 9, marginBottom: 4 }}>Or copy your current backup from here:</div>
+      <textarea readOnly value={backup} onFocus={(e) => e.target.select()} rows={3} className="np-in np-mono" style={{ ...inStyle, resize: "vertical", fontSize: 10, lineHeight: 1.35, minHeight: 50, width: "100%", boxSizing: "border-box", color: "var(--dim)" }} />
     </div>
   );
 }
 
-function Field({ label, children }) {
+function Field({ label, children, onShout }) {
   return (
     <label style={{ flex: 1, display: "block" }}>
-      <span className="np-mono" style={{ fontSize: 10, letterSpacing: ".1em", color: "var(--muted)", textTransform: "uppercase", display: "block", marginBottom: 5 }}>{label}</span>
+      <span className="np-label" style={{ color: onShout ? "rgba(10,10,10,.62)" : "rgba(255,255,255,.45)", display: "block", marginBottom: 7, paddingLeft: 4 }}>{label}</span>
       {children}
     </label>
   );
 }
 function Empty({ icon, title, sub, action, onAction, compact }) {
   return (
-    <div className="np-card np-pop" style={{ borderRadius: 17, padding: compact ? "26px 20px" : "40px 24px", textAlign: "center", margin: compact ? "4px 0 16px" : "8px 0" }}>
-      <div style={{ display: "grid", placeItems: "center", width: 46, height: 46, borderRadius: 14, background: "#F5F2EC", margin: "0 auto 14px" }}>
-        <Ico n={icon} s={22} c="var(--navy)" />
+    <div className="np-card np-pop" style={{ padding: compact ? "34px 24px" : "48px 26px", textAlign: "center", margin: compact ? "4px 0 16px" : "8px 0" }}>
+      <div style={{ display: "grid", placeItems: "center", width: 54, height: 54, borderRadius: 999, background: "var(--shout)", margin: "0 auto 18px" }}>
+        <Ico n={icon} s={23} c="var(--ink)" w={2.4} />
       </div>
-      <div style={{ fontSize: 18, fontWeight: 700 }}>{title}</div>
-      <div style={{ fontSize: 13.5, color: "var(--muted)", marginTop: 6, lineHeight: 1.45, maxWidth: 280, marginLeft: "auto", marginRight: "auto" }}>{sub}</div>
-      {action && <button onClick={onAction} className="np-mono" style={{ marginTop: 16, background: "var(--navy)", color: "#fff", border: "none", borderRadius: 11, padding: "10px 18px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}>{action}</button>}
+      <div className="np-display" style={{ fontSize: 24 }}>{title}</div>
+      <div style={{ fontSize: 13.5, color: "var(--dim)", marginTop: 10, lineHeight: 1.55, maxWidth: 290, marginLeft: "auto", marginRight: "auto" }}>{sub}</div>
+      {action && (
+        <button onClick={onAction} className="np-label"
+          style={{ marginTop: 20, background: "var(--shout)", color: "var(--ink)", border: "none", borderRadius: 999, padding: "14px 26px", cursor: "pointer" }}>
+          {action}
+        </button>
+      )}
     </div>
   );
 }
 
-const inStyle = { width: "100%", padding: "10px 12px", borderRadius: 10, fontSize: 14.5, color: "var(--ink)" };
-const addBtn = { width: 42, height: 42, flexShrink: 0, borderRadius: 11, border: "none", background: "var(--coral)", color: "#fff", display: "grid", placeItems: "center", cursor: "pointer" };
-const iconBtn = { width: 38, height: 38, flexShrink: 0, borderRadius: 11, border: "1px solid var(--line)", display: "grid", placeItems: "center", cursor: "pointer" };
-const ghost = { background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: 0, display: "grid", placeItems: "center" };
-const primaryBtn = { marginTop: 4, background: "var(--navy)", color: "#fff", border: "none", borderRadius: 11, padding: "11px 0", fontWeight: 600, fontSize: 13, cursor: "pointer", letterSpacing: ".01em" };
+// Shared control styling. Pills everywhere — no mid-size radii anywhere in the UI.
+const inStyle = { width: "100%", padding: "13px 17px", fontSize: 14.5, border: "none" };
+const inkInput = { width: "100%", padding: "13px 17px", fontSize: 14.5, border: "none" };
+const addBtn = { width: 46, height: 46, flexShrink: 0, borderRadius: 999, border: "none", background: "var(--shout)", color: "var(--ink)", display: "grid", placeItems: "center", cursor: "pointer" };
+const iconBtn = { width: 40, height: 40, flexShrink: 0, borderRadius: 999, border: "1px solid var(--glass-line)", background: "rgba(255,255,255,.06)", display: "grid", placeItems: "center", cursor: "pointer" };
+const ghost = { background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,.42)", padding: 0, display: "grid", placeItems: "center" };
+const primaryBtn = { marginTop: 4, background: "var(--shout)", color: "var(--ink)", border: "none", borderRadius: 999, padding: "14px 0", fontWeight: 700, fontSize: 12.5, cursor: "pointer", letterSpacing: ".01em" };
