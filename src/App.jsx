@@ -38,6 +38,7 @@ const PATHS = {
   route: <><circle cx="6" cy="19" r="2.4" /><circle cx="18" cy="5" r="2.4" /><path d="M8.3 19H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.7" /></>,
   star: <polygon points="12 2 14.9 8.6 22 9.3 16.6 14 18.3 21 12 17.3 5.7 21 7.4 14 2 9.3 9.1 8.6" />,
   locate: <><circle cx="12" cy="12" r="7" /><line x1="12" y1="2" x2="12" y2="5" /><line x1="12" y1="19" x2="12" y2="22" /><line x1="2" y1="12" x2="5" y2="12" /><line x1="19" y1="12" x2="22" y2="12" /><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" /></>,
+  anchor: <><circle cx="12" cy="5" r="2.6" /><line x1="12" y1="22" x2="12" y2="7.6" /><path d="M5 12H2a10 10 0 0 0 20 0h-3" /></>,
   sun: <><circle cx="12" cy="12" r="4.2" /><path d="M12 2v2.4M12 19.6V22M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2 12h2.4M19.6 12H22M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" /></>,
 };
 function Ico({ n, s = 16, c = "currentColor", w = 2, fill = "none" }) {
@@ -160,9 +161,10 @@ const DEFAULT = {
   name: "Newport Jazz Fest Trip", destination: "Newport, RI",
   homeBase: "",
   startDate: "2026-07-30", endDate: "2026-08-02",
-  days: {}, places: [], lineup: [], seededLineup: false, lineupVersion: 0, datesVersion: 0,
+  days: {}, places: [], lineup: [], kingston: [], seededLineup: false, lineupVersion: 0, datesVersion: 0, kingstonVersion: 0,
 };
-const PLACE_CATS = ["Beach", "Eat", "See", "Do", "Sail", "Historic", "Shop", "Sweet", "Music", "Scenic"];
+const PLACE_CATS = ["Beach", "Eat", "See", "Do", "Sail", "Historic", "Nature", "Shop", "Sweet", "Music", "Scenic"];
+const TAG_COLOR = { Beach: "#0E7C9A", Eat: "#C1502E", See: "#0E3A52", Do: "#8A5A2B", Sail: "#1E6B5C", Historic: "#7A5A2E", Nature: "#3F7A46", Shop: "#7A4A6B", Sweet: "#C16B8E", Music: "#5A4A9E", Scenic: "#3A7A5A" };
 const PLACES_VERSION = 2;
 
 // Evergreen Newport, RI + nearby (Middletown, Jamestown) picks — beaches, Gilded
@@ -248,6 +250,22 @@ const SEED_PLACES = [
   { category: "Music", name: "One Pelham East", summary: "A Thames Street bar with live local bands most summer nights — casual, loud, and walkable from the wharves.", url: "https://www.google.com/search?q=One+Pelham+East+Newport+RI" },
 ];
 
+// North Kingstown, RI and within ~10 miles of it — roughly 30 minutes up the west
+// side of Narragansett Bay from Newport, across the Jamestown and Newport bridges.
+const KINGSTON_VERSION = 1;
+const KINGSTON_PLACES = [
+  { category: "See", name: "Wickford Village", near: "North Kingstown, RI", summary: "The reason to come. A postcard colonial harbor village with one of the largest concentrations of 18th-century homes in the Northeast — walkable blocks of galleries, boutiques, and a working waterfront. Easily a whole relaxed afternoon.", url: "https://www.google.com/search?q=Wickford+Village+North+Kingstown+RI" },
+  { category: "Historic", name: "Smith's Castle", near: "North Kingstown, RI", summary: "A 1678 plantation house on Cocumscussoc Brook — one of the oldest surviving houses in the country, with grounds and gardens along the water. Small, cheap, and genuinely old.", url: "https://www.google.com/search?q=Smith%27s+Castle+North+Kingstown+RI" },
+  { category: "Historic", name: "Gilbert Stuart Birthplace & Museum", near: "Saunderstown, RI", summary: "Birthplace of the painter behind the George Washington portrait on the dollar bill. A 1751 house with an original snuff mill, gristmill, and a fish ladder running beside it — a surprisingly pretty, wooded stop.", url: "https://www.google.com/search?q=Gilbert+Stuart+Birthplace+Museum+Saunderstown+RI" },
+  { category: "Historic", name: "Casey Farm", near: "Saunderstown, RI", summary: "A working coastal farm from the 1750s, still growing food and run by Historic New England. Stone walls to the water, animals, and a seasonal farmers market. Low-key and good with kids.", url: "https://www.google.com/search?q=Casey+Farm+Saunderstown+RI" },
+  { category: "Nature", name: "Rome Point (John H. Chafee Preserve)", near: "North Kingstown, RI", summary: "An easy wooded mile out to a rocky bay shoreline with wide views of the Jamestown bridge. Best known as the state's harbor seal haul-out — the seals are a cold-months thing, but the walk and the shore are worth it any time.", url: "https://www.google.com/search?q=Rome+Point+John+Chafee+Preserve+North+Kingstown" },
+  { category: "Nature", name: "Ryan Park", near: "North Kingstown, RI", summary: "North Kingstown's own trail network — flat, shaded loops around a pond, popular with walkers and mountain bikers. The convenient option when you want a stretch of legs, not a day hike.", url: "https://www.google.com/search?q=Ryan+Park+North+Kingstown+RI" },
+  { category: "Sail", name: "Narrow River Kayaks", near: "Narragansett, RI", summary: "Kayak and paddleboard rentals on the sheltered Narrow River — flat, tidal water winding through marsh down toward the ocean. Far calmer than paddling the bay, and beginner-friendly.", url: "https://www.google.com/search?q=Narrow+River+Kayaks+Narragansett+RI" },
+  { category: "Beach", name: "Mackerel Cove Beach", near: "Jamestown, RI", summary: "A sheltered crescent of sand on the isthmus of Jamestown with calm, warm water — a gentler swim than the Newport ocean beaches, and right on the way to Beavertail.", url: "https://www.google.com/search?q=Mackerel+Cove+Beach+Jamestown+RI" },
+  { category: "See", name: "Jamestown Windmill & Watson Farm", near: "Jamestown, RI", summary: "A restored 1787 smock windmill on open pasture, plus a Historic New England working sheep-and-cattle farm nearby with trails to the bay. Two small stops that pair naturally.", url: "https://www.google.com/search?q=Jamestown+Windmill+Watson+Farm+RI" },
+  { category: "See", name: "Tomaquag Museum", near: "Exeter, RI", summary: "Rhode Island's only museum dedicated to Indigenous history and culture, run by the Narragansett community. Small but exceptional, and the best context you'll get for everything else you're looking at in the state.", url: "https://www.google.com/search?q=Tomaquag+Museum+Exeter+RI" },
+];
+
 export default function App() {
   const [trip, setTrip] = useState(DEFAULT);
   const [tab, setTab] = useState("itinerary");
@@ -297,6 +315,12 @@ export default function App() {
       t = { ...t, startDate: DEFAULT.startDate, endDate: DEFAULT.endDate, datesVersion: DATES_VERSION };
       mutated = true;
     }
+    if ((t.kingstonVersion || 0) < KINGSTON_VERSION) {
+      const have = new Set((t.kingston || []).map((k) => k.name.toLowerCase()));
+      const additions = KINGSTON_PLACES.filter((k) => !have.has(k.name.toLowerCase())).map((k) => ({ ...k, id: uid() }));
+      t = { ...t, kingston: [...(t.kingston || []), ...additions], kingstonVersion: KINGSTON_VERSION };
+      mutated = true;
+    }
     if ((t.placesVersion || 0) < PLACES_VERSION) {
       const have = new Set((t.places || []).map((p) => p.name.toLowerCase()));
       const additions = SEED_PLACES.filter((p) => !have.has(p.name.toLowerCase())).map((p) => ({ ...p, id: uid() }));
@@ -336,7 +360,7 @@ export default function App() {
       </div>
     );
 
-  const TABS = [["itinerary", "cal", "Plans"], ["lineup", "music", "Lineup"], ["places", "pin", "Spots"]];
+  const TABS = [["itinerary", "cal", "Plans"], ["lineup", "music", "Lineup"], ["places", "pin", "Spots"], ["kingston", "anchor", "Kingston"]];
 
   return (
     <div className="np-app" style={{ background: "var(--bg)", color: "var(--ink)" }}>
@@ -359,6 +383,7 @@ export default function App() {
           {tab === "itinerary" && <Itinerary trip={trip} days={days} activeDay={activeDay} setActiveDay={setActiveDay} save={save} gotoHeader={() => setEditHeader(true)} />}
           {tab === "lineup" && <Lineup trip={trip} days={days} save={save} />}
           {tab === "places" && <Places trip={trip} days={days} save={save} />}
+          {tab === "kingston" && <Kingston trip={trip} days={days} save={save} />}
         </div>
 
         <div className="np-mono" style={{ textAlign: "center", marginTop: 24, fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--muted)", opacity: .7 }}>
@@ -725,9 +750,6 @@ function Lineup({ trip, days, save }) {
 function Places({ trip, days, save }) {
   const [cat, setCat] = useState(PLACE_CATS[0]);
   const [name, setName] = useState("");
-  const [openDir, setOpenDir] = useState(null);
-  const [openPlan, setOpenPlan] = useState(null);
-  const [justAdded, setJustAdded] = useState(null);
   const [nearby, setNearby] = useState(null);   // null = show all; array = within radius
   const [locating, setLocating] = useState(false);
   const [locErr, setLocErr] = useState("");
@@ -742,9 +764,7 @@ function Places({ trip, days, save }) {
   const addToPlan = (p, iso) => {
     const item = { id: uid(), time: "", title: p.name };
     save({ ...trip, days: { ...trip.days, [iso]: [...(trip.days[iso] || []), item] } });
-    setJustAdded({ id: p.id, iso });
   };
-  const tagColor = { Beach: "#0E7C9A", Eat: "#C1502E", See: "#0E3A52", Do: "#8A5A2B", Sail: "#1E6B5C", Historic: "#7A5A2E", Shop: "#7A4A6B", Sweet: "#C16B8E", Music: "#5A4A9E", Scenic: "#3A7A5A" };
 
   const RADIUS_MI = 3;
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -824,7 +844,7 @@ function Places({ trip, days, save }) {
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
           {["All", ...presentCats].map((c) => {
             const on = filterCat === c;
-            const col = c === "All" ? "var(--navy)" : (tagColor[c] || "var(--navy)");
+            const col = c === "All" ? "var(--navy)" : (TAG_COLOR[c] || "var(--navy)");
             const count = c === "All" ? baseList.length : baseList.filter((p) => p.category === c).length;
             return (
               <button key={c} onClick={() => setFilterCat(c)} className="np-mono"
@@ -849,58 +869,10 @@ function Places({ trip, days, save }) {
       )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {list.map((p) => {
-          const d = distOf(p.id);
-          return (
-            <div key={p.id} className="np-card np-pop" style={{ borderRadius: 15, padding: 14 }}>
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <span className="np-mono" style={{ fontSize: 10.3, letterSpacing: ".1em", textTransform: "uppercase", color: tagColor[p.category] || "var(--navy)", fontWeight: 700 }}>
-                    {p.category}{d != null ? ` · ${d < 0.1 ? "<0.1" : d.toFixed(1)} mi` : ""}
-                  </span>
-                  <div style={{ fontSize: 18.5, fontWeight: 700, lineHeight: 1.2, marginTop: 3 }}>{p.name}</div>
-                </div>
-                <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                  <button onClick={() => { setOpenPlan(openPlan === p.id ? null : p.id); setJustAdded(null); }} aria-label="Add to plans" style={{ ...iconBtn, width: 38, height: 38, background: openPlan === p.id ? "var(--navy)" : "#F5F2EC" }}>
-                    <Ico n="cal" s={16} c={openPlan === p.id ? "#fff" : "var(--navy)"} />
-                  </button>
-                  <button onClick={() => setOpenDir(openDir === p.id ? null : p.id)} aria-label="Directions" style={{ ...iconBtn, width: 38, height: 38, background: openDir === p.id ? "var(--navy)" : "#F5F2EC" }}>
-                    <Ico n="route" s={16} c={openDir === p.id ? "#fff" : "var(--navy)"} />
-                  </button>
-                  <button onClick={() => del(p.id)} aria-label="Remove" style={ghost}><Ico n="trash" s={15} /></button>
-                </div>
-              </div>
-              {p.summary && <div style={{ fontSize: 13.5, color: "var(--muted)", lineHeight: 1.5, marginTop: 9 }}>{p.summary}</div>}
-              {p.url && (
-                <a href={p.url} target="_blank" rel="noopener noreferrer" className="np-mono" style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 8, fontSize: 11.9, fontWeight: 600, color: "var(--coral)", textDecoration: "none", letterSpacing: ".03em", textTransform: "uppercase" }}>
-                  More info ↗
-                </a>
-              )}
-              {openPlan === p.id && (
-                <div className="np-pop" style={{ marginTop: 11, borderTop: "1px solid var(--line)", paddingTop: 11 }}>
-                  <div className="np-mono" style={{ fontSize: 10.8, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 8 }}>Add to a day</div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                    {days.map((iso) => {
-                      const ch = fmtChip(iso);
-                      const on = justAdded && justAdded.id === p.id && justAdded.iso === iso;
-                      return (
-                        <button key={iso} onClick={() => addToPlan(p, iso)} className="np-mono" style={{ fontSize: 11.9, padding: "7px 11px", borderRadius: 10, cursor: "pointer", border: "1px solid var(--line)", background: on ? "var(--navy)" : "var(--surface)", color: on ? "#fff" : "var(--navy)" }}>
-                          {ch.wd} {ch.mo} {ch.day}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {justAdded && justAdded.id === p.id && (
-                    <div className="np-mono" style={{ fontSize: 11.9, color: "var(--coral)", marginTop: 9, lineHeight: 1.4 }}>
-                      Added to your Plans as an any-time item — open Plans to give it a time.
-                    </div>
-                  )}
-                </div>
-              )}
-              {openDir === p.id && <MapPanel from={trip.homeBase} to={`${p.name} ${trip.destination || ""}`} />}
-            </div>
-          );
-        })}
+        {list.map((p) => (
+          <PlaceCard key={p.id} p={p} trip={trip} days={days} dist={distOf(p.id)}
+            onDelete={() => del(p.id)} onAddToPlan={addToPlan} />
+        ))}
       </div>
 
       {!showNearby && (
@@ -920,7 +892,126 @@ function Places({ trip, days, save }) {
   );
 }
 
+// ---- Kingston ---------------------------------------------------------------
+function Kingston({ trip, days, save }) {
+  const [name, setName] = useState("");
+  const [cat, setCat] = useState("See");
+  const list = trip.kingston || [];
+
+  const add = () => {
+    if (!name.trim()) return;
+    save({ ...trip, kingston: [...list, { id: uid(), category: cat, name: name.trim(), near: "North Kingstown, RI" }] });
+    setName("");
+  };
+  const del = (id) => save({ ...trip, kingston: list.filter((k) => k.id !== id) });
+  const addToPlan = (k, iso) => {
+    save({ ...trip, days: { ...trip.days, [iso]: [...(trip.days[iso] || []), { id: uid(), time: "", title: k.name }] } });
+  };
+
+  return (
+    <>
+      <div className="np-card" style={{ borderRadius: 15, padding: "14px 16px", marginBottom: 16 }}>
+        <div className="np-mono" style={{ fontSize: 10, letterSpacing: ".14em", color: "var(--coral)", textTransform: "uppercase" }}>Day trip</div>
+        <div style={{ fontSize: 19, fontWeight: 700, lineHeight: 1.1, marginTop: 2 }}>North Kingstown & around</div>
+        <div style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5, marginTop: 7 }}>
+          Everything here is within about 10 miles of North Kingstown — roughly a 30-minute
+          drive from Newport over the Newport and Jamestown bridges. Wickford Village is the
+          anchor; the rest fans out from there.
+        </div>
+        <a href={`https://www.google.com/maps/dir/?api=1&origin=${enc(trip.homeBase || trip.destination || "Newport, RI")}&destination=${enc("Wickford Village, North Kingstown, RI")}`}
+          target="_blank" rel="noopener noreferrer" className="np-mono"
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 11, color: "var(--navy)", fontSize: 11.5, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase", textDecoration: "none", border: "1px solid var(--line)", borderRadius: 10, padding: "8px 12px", background: "#F5F2EC" }}>
+          <Ico n="route" s={13} c="var(--navy)" /> Drive up from home base
+        </a>
+      </div>
+
+      {list.length === 0 && <Empty icon="anchor" title="Nothing saved here" sub="Add a spot around North Kingstown and it gets directions and a one-tap add to any day." compact />}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {list.map((k) => (
+          <PlaceCard key={k.id} p={k} trip={trip} days={days}
+            onDelete={() => del(k.id)} onAddToPlan={addToPlan} />
+        ))}
+      </div>
+
+      <div className="np-card" style={{ borderRadius: 14, padding: 10, marginTop: 14 }}>
+        <div style={{ display: "flex", gap: 6, marginBottom: 9, flexWrap: "wrap" }}>
+          {PLACE_CATS.map((c) => (
+            <button key={c} onClick={() => setCat(c)} className="np-mono" style={{ flex: "1 0 18%", fontSize: 11.6, padding: "6px 0", borderRadius: 8, cursor: "pointer", border: "1px solid var(--line)", background: cat === c ? "var(--navy)" : "transparent", color: cat === c ? "#fff" : "var(--muted)" }}>{c}</button>
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} placeholder="Add a Kingston-area spot…" className="np-in" style={{ ...inStyle, flex: 1 }} />
+          <button onClick={add} aria-label="Add place" style={addBtn}><Ico n="plus" s={18} c="#fff" /></button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ---- shared -----------------------------------------------------------------
+// One saved place. Used by both Spots and Kingston, so each card owns its own
+// open/added state rather than the list tracking it by id.
+function PlaceCard({ p, trip, days, dist, onDelete, onAddToPlan }) {
+  const [openDir, setOpenDir] = useState(false);
+  const [openPlan, setOpenPlan] = useState(false);
+  const [addedTo, setAddedTo] = useState(null);
+  // `near` lets an out-of-town place (Kingston) geocode against its own town
+  // instead of the trip destination.
+  const region = p.near || trip.destination || "";
+
+  return (
+    <div className="np-card np-pop" style={{ borderRadius: 15, padding: 14 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <span className="np-mono" style={{ fontSize: 10.3, letterSpacing: ".1em", textTransform: "uppercase", color: TAG_COLOR[p.category] || "var(--navy)", fontWeight: 700 }}>
+            {p.category}{dist != null ? ` · ${dist < 0.1 ? "<0.1" : dist.toFixed(1)} mi` : ""}
+          </span>
+          <div style={{ fontSize: 18.5, fontWeight: 700, lineHeight: 1.2, marginTop: 3 }}>{p.name}</div>
+          {p.near && <div className="np-mono" style={{ fontSize: 11, color: "var(--muted)", marginTop: 3 }}>{p.near}</div>}
+        </div>
+        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+          <button onClick={() => { setOpenPlan((v) => !v); setAddedTo(null); }} aria-label="Add to plans" style={{ ...iconBtn, width: 38, height: 38, background: openPlan ? "var(--navy)" : "#F5F2EC" }}>
+            <Ico n="cal" s={16} c={openPlan ? "#fff" : "var(--navy)"} />
+          </button>
+          <button onClick={() => setOpenDir((v) => !v)} aria-label="Directions" style={{ ...iconBtn, width: 38, height: 38, background: openDir ? "var(--navy)" : "#F5F2EC" }}>
+            <Ico n="route" s={16} c={openDir ? "#fff" : "var(--navy)"} />
+          </button>
+          <button onClick={onDelete} aria-label="Remove" style={ghost}><Ico n="trash" s={15} /></button>
+        </div>
+      </div>
+      {p.summary && <div style={{ fontSize: 13.5, color: "var(--muted)", lineHeight: 1.5, marginTop: 9 }}>{p.summary}</div>}
+      {p.url && (
+        <a href={p.url} target="_blank" rel="noopener noreferrer" className="np-mono" style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 8, fontSize: 11.9, fontWeight: 600, color: "var(--coral)", textDecoration: "none", letterSpacing: ".03em", textTransform: "uppercase" }}>
+          More info ↗
+        </a>
+      )}
+      {openPlan && (
+        <div className="np-pop" style={{ marginTop: 11, borderTop: "1px solid var(--line)", paddingTop: 11 }}>
+          <div className="np-mono" style={{ fontSize: 10.8, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 8 }}>Add to a day</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {days.map((iso) => {
+              const ch = fmtChip(iso);
+              const on = addedTo === iso;
+              return (
+                <button key={iso} onClick={() => { onAddToPlan(p, iso); setAddedTo(iso); }} className="np-mono" style={{ fontSize: 11.9, padding: "7px 11px", borderRadius: 10, cursor: "pointer", border: "1px solid var(--line)", background: on ? "var(--navy)" : "var(--surface)", color: on ? "#fff" : "var(--navy)" }}>
+                  {ch.wd} {ch.mo} {ch.day}
+                </button>
+              );
+            })}
+          </div>
+          {addedTo && (
+            <div className="np-mono" style={{ fontSize: 11.9, color: "var(--coral)", marginTop: 9, lineHeight: 1.4 }}>
+              Added to your Plans as an any-time item — open Plans to give it a time.
+            </div>
+          )}
+        </div>
+      )}
+      {openDir && <MapPanel from={trip.homeBase} to={`${p.name} ${region}`} />}
+    </div>
+  );
+}
+
 function MapPanel({ from, to }) {
   const dest = to || "";
   const src = from
