@@ -51,6 +51,10 @@ function Ico({ n, s = 16, c = "currentColor", w = 2, fill = "none" }) {
 
 // ---- helpers --------------------------------------------------------------
 const uid = () => Math.random().toString(36).slice(2, 9);
+// What a starred act reads as once it lands in Plans — the stage matters more
+// than the venue here, since every set is at the same Fort Adams address.
+const planTitle = (a) => a.stage ? `${a.artist} — ${a.stage}` : a.artist;
+const fmtSlot = (a) => a.time ? (a.endTime ? `${a.time}–${a.endTime}` : a.time) : "Time TBA";
 const KEY = "newportage-v1";
 const APP_VERSION = "1";
 const enc = encodeURIComponent;
@@ -81,39 +85,90 @@ function daysUntil(iso) {
   return Math.round((target - Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000);
 }
 
-// 2026 Newport Jazz Festival lineup (confirmed acts, Jul 31–Aug 2, Fort Adams State
-// Park). Newport hasn't published which artist plays which day/stage yet — that
-// usually lands close to the date, so these sit "Unscheduled" until you tap the
-// pencil and set a day/time off the official poster.
-const SEED_VERSION = 1;
+// 2026 Newport Jazz Festival — Fort Adams State Park, Jul 31–Aug 2.
+// Fri Jul 31 and Sat Aug 1 set times/stages are transcribed from the official
+// newportjazz.org schedule. Sunday Aug 2 set times hadn't been published, so the
+// remaining announced acts sit on Sunday without a time — tap the pencil to fill
+// them in once the poster drops.
+const STAGES = ["Fort Stage", "Quad Stage", "Harbor Stage", "Foundation Stage"];
+const STAGE_COLOR = {
+  "Fort Stage": "#E0526F",
+  "Quad Stage": "#2F9E52",
+  "Harbor Stage": "#3789CE",
+  "Foundation Stage": "#A8873A",
+};
+const FEST_VENUE = "Fort Adams State Park";
+const SEED_VERSION = 2;
 const SEED_LINEUP = [
-  { artist: "Janelle Monáe", venue: "Fort Adams State Park", date: "", time: "", starred: false },
-  { artist: "The Roots", venue: "Fort Adams State Park", date: "", time: "", starred: false },
-  { artist: "Jacob Collier", venue: "Fort Adams State Park", date: "", time: "", starred: false },
-  { artist: "Raye", venue: "Fort Adams State Park", date: "", time: "", starred: false },
-  { artist: "Jon Batiste", venue: "Fort Adams State Park", date: "", time: "", starred: false },
-  { artist: "Herbie Hancock", venue: "Fort Adams State Park", date: "", time: "", starred: false },
-  { artist: "Thundercat", venue: "Fort Adams State Park", date: "", time: "", starred: false },
-  { artist: "Gary Clark Jr.", venue: "Fort Adams State Park", date: "", time: "", starred: false },
-  { artist: "Robert Glasper (feat. Bilal & Ari Lennox)", venue: "Fort Adams State Park", date: "", time: "", starred: false },
-  { artist: "Charles Lloyd Sky Quartet (feat. Jason Moran)", venue: "Fort Adams State Park", date: "", time: "", starred: false },
-  { artist: "John Scofield & Dave Holland", venue: "Fort Adams State Park", date: "", time: "", starred: false },
-  { artist: "Terri Lyne Carrington + Social Science", venue: "Fort Adams State Park", date: "", time: "", starred: false },
-  { artist: "Vulfpeck", venue: "Fort Adams State Park", date: "", time: "", starred: false },
-  { artist: "Lake Street Dive", venue: "Fort Adams State Park", date: "", time: "", starred: false },
-  { artist: "Snarky Puppy", venue: "Fort Adams State Park", date: "", time: "", starred: false },
-  { artist: "Cory Wong with Joshua Redman", venue: "Fort Adams State Park", date: "", time: "", starred: false },
-  { artist: "Little Simz", venue: "Fort Adams State Park", date: "", time: "", starred: false },
-  { artist: "Arlo Parks", venue: "Fort Adams State Park", date: "", time: "", starred: false },
-  { artist: "Celeste", venue: "Fort Adams State Park", date: "", time: "", starred: false },
-  { artist: "Leon Thomas", venue: "Fort Adams State Park", date: "", time: "", starred: false },
-  { artist: "Sienna Spiro", venue: "Fort Adams State Park", date: "", time: "", starred: false },
-  { artist: "Mei Semones", venue: "Fort Adams State Park", date: "", time: "", starred: false },
-  { artist: "Flea and the Honora Band", venue: "Fort Adams State Park", date: "", time: "", starred: false },
-  { artist: "Marcus King (Atomic Habits)", venue: "Fort Adams State Park", date: "", time: "", starred: false },
-  { artist: "Charlie Hunter & Ella Feingold", venue: "Fort Adams State Park", date: "", time: "", starred: false },
-  { artist: "The Bad Plus", venue: "Fort Adams State Park", date: "", time: "", starred: false },
-];
+  // ---- Friday, July 31 ----
+  { artist: "Local Jam", stage: "Fort Stage", date: "2026-07-31", time: "11:30", endTime: "12:00" },
+  { artist: "Chicago Underground Duo", stage: "Fort Stage", date: "2026-07-31", time: "12:25", endTime: "13:15" },
+  { artist: "Angine de Poitrine", stage: "Fort Stage", date: "2026-07-31", time: "13:40", endTime: "14:30" },
+  { artist: "Yebba", stage: "Fort Stage", date: "2026-07-31", time: "15:05", endTime: "16:05" },
+  { artist: "Robert Glasper with Bilal & Ari Lennox", stage: "Fort Stage", date: "2026-07-31", time: "16:40", endTime: "17:55" },
+  { artist: "Vulfpeck", stage: "Fort Stage", date: "2026-07-31", time: "18:35", endTime: "19:45" },
+
+  { artist: "Braxton Cook", stage: "Quad Stage", date: "2026-07-31", time: "11:05", endTime: "11:50" },
+  { artist: "Bernard Purdie & Friends", stage: "Quad Stage", date: "2026-07-31", time: "12:20", endTime: "13:10" },
+  { artist: "Anoushka Shankar", stage: "Quad Stage", date: "2026-07-31", time: "13:40", endTime: "14:30" },
+  { artist: "Charles Lloyd Sky Quartet", stage: "Quad Stage", date: "2026-07-31", time: "15:00", endTime: "15:50" },
+  { artist: "Leon Thomas", stage: "Quad Stage", date: "2026-07-31", time: "16:20", endTime: "17:15" },
+  { artist: "Little Simz", stage: "Quad Stage", date: "2026-07-31", time: "17:50", endTime: "18:50" },
+
+  { artist: "Concurrence", stage: "Harbor Stage", date: "2026-07-31", time: "11:00", endTime: "11:40" },
+  { artist: "Gena", stage: "Harbor Stage", date: "2026-07-31", time: "12:05", endTime: "12:50" },
+  { artist: "Tia Fuller feat. Shamie Fuller Royston", stage: "Harbor Stage", date: "2026-07-31", time: "13:20", endTime: "14:10" },
+  { artist: "Mohini Dey", stage: "Harbor Stage", date: "2026-07-31", time: "14:40", endTime: "15:30" },
+  { artist: "Lalah Hathaway", stage: "Harbor Stage", date: "2026-07-31", time: "16:00", endTime: "16:55" },
+  { artist: "Chief Adjuah", stage: "Harbor Stage", date: "2026-07-31", time: "17:25", endTime: "18:20" },
+
+  { artist: "Newport Jazz Camp", stage: "Foundation Stage", date: "2026-07-31", time: "12:00", endTime: "12:20" },
+  { artist: "Nate Smith talks with Charles Lloyd", stage: "Foundation Stage", date: "2026-07-31", time: "13:15", endTime: "13:35" },
+  { artist: "Jazz Lab", stage: "Foundation Stage", date: "2026-07-31", time: "14:30", endTime: "15:00" },
+
+  // ---- Saturday, August 1 ----
+  { artist: "Local Jam", stage: "Fort Stage", date: "2026-08-01", time: "11:30", endTime: "12:00" },
+  { artist: "Butcher Brown", stage: "Fort Stage", date: "2026-08-01", time: "12:30", endTime: "13:20" },
+  { artist: "Nate Smith", stage: "Fort Stage", date: "2026-08-01", time: "13:50", endTime: "14:45" },
+  { artist: "Cory Wong with Joshua Redman", stage: "Fort Stage", date: "2026-08-01", time: "15:20", endTime: "16:20" },
+  { artist: "Gary Clark Jr.", stage: "Fort Stage", date: "2026-08-01", time: "16:55", endTime: "17:55" },
+  { artist: "Sonny Miles on a Trane feat. Kamasi Washington & Chief Adjuah", stage: "Fort Stage", date: "2026-08-01", time: "18:30", endTime: "19:45" },
+
+  { artist: "Olive Jones", stage: "Quad Stage", date: "2026-08-01", time: "11:05", endTime: "11:50" },
+  { artist: "Mei Semones", stage: "Quad Stage", date: "2026-08-01", time: "12:20", endTime: "13:10" },
+  { artist: "John Scofield & Dave Holland", stage: "Quad Stage", date: "2026-08-01", time: "13:40", endTime: "14:30" },
+  { artist: "Snarky Puppy", stage: "Quad Stage", date: "2026-08-01", time: "15:10", endTime: "16:00" },
+  { artist: "Atomic Habitz feat. Marcus King, Chris Dave & MonoNeon", stage: "Quad Stage", date: "2026-08-01", time: "16:30", endTime: "17:25" },
+  { artist: "Jonathan Batiste Trios", stage: "Quad Stage", date: "2026-08-01", time: "18:00", endTime: "19:00" },
+
+  { artist: "Billy Hart Quartet", stage: "Harbor Stage", date: "2026-08-01", time: "11:00", endTime: "11:40" },
+  { artist: "Brandon Woody's Upendo", stage: "Harbor Stage", date: "2026-08-01", time: "12:05", endTime: "12:50" },
+  { artist: "Maya Delilah", stage: "Harbor Stage", date: "2026-08-01", time: "13:20", endTime: "14:10" },
+  { artist: "Linda May Han Oh Trio", stage: "Harbor Stage", date: "2026-08-01", time: "14:40", endTime: "15:30" },
+  { artist: "Gotts Street Park", stage: "Harbor Stage", date: "2026-08-01", time: "16:00", endTime: "16:45" },
+  { artist: "Terri Lyne Carrington", stage: "Harbor Stage", date: "2026-08-01", time: "17:25", endTime: "18:20" },
+
+  // Foundation Stage talks — the right edge of the schedule was cropped in the
+  // source screenshot, so these titles are partial. Edit to correct.
+  { artist: "Nate Chinen with Ambrose Akinmusire (title cropped)", stage: "Foundation Stage", date: "2026-08-01", time: "12:00", endTime: "12:25" },
+  { artist: "Marcus J. Moore with Terri Lyne Carrington (title cropped)", stage: "Foundation Stage", date: "2026-08-01", time: "13:20", endTime: "13:45" },
+  { artist: "Newport Jazz Camp", stage: "Foundation Stage", date: "2026-08-01", time: "14:45", endTime: "15:15" },
+
+  // ---- Sunday, August 2 — announced, set times not yet published ----
+  { artist: "Janelle Monáe", stage: "", date: "2026-08-02", time: "", endTime: "" },
+  { artist: "The Roots", stage: "", date: "2026-08-02", time: "", endTime: "" },
+  { artist: "Jacob Collier", stage: "", date: "2026-08-02", time: "", endTime: "" },
+  { artist: "Raye", stage: "", date: "2026-08-02", time: "", endTime: "" },
+  { artist: "Herbie Hancock", stage: "", date: "2026-08-02", time: "", endTime: "" },
+  { artist: "Thundercat", stage: "", date: "2026-08-02", time: "", endTime: "" },
+  { artist: "Lake Street Dive", stage: "", date: "2026-08-02", time: "", endTime: "" },
+  { artist: "Arlo Parks", stage: "", date: "2026-08-02", time: "", endTime: "" },
+  { artist: "Celeste", stage: "", date: "2026-08-02", time: "", endTime: "" },
+  { artist: "Sienna Spiro", stage: "", date: "2026-08-02", time: "", endTime: "" },
+  { artist: "Flea and the Honora Band", stage: "", date: "2026-08-02", time: "", endTime: "" },
+  { artist: "Charlie Hunter & Ella Feingold", stage: "", date: "2026-08-02", time: "", endTime: "" },
+  { artist: "The Bad Plus", stage: "", date: "2026-08-02", time: "", endTime: "" },
+].map((a) => ({ venue: FEST_VENUE, starred: false, ...a }));
 
 const DEFAULT = {
   name: "Newport Jazz Fest Trip", destination: "Newport, RI",
@@ -216,6 +271,24 @@ export default function App() {
     let mutated = false;
     if (!t.lineup || t.lineup.length === 0) {
       t = { ...t, lineup: SEED_LINEUP.map((a) => ({ ...a, id: uid() })) };
+      mutated = true;
+    } else if ((t.lineupVersion || 0) < SEED_VERSION) {
+      // Newport published the real schedule — reseed, but carry over which acts
+      // were starred and rebuild their Plans entries against the new set times.
+      const wasStarred = new Set((t.lineup || []).filter((a) => a.starred).map((a) => a.artist));
+      const lineup = SEED_LINEUP.map((s) => ({ ...s, id: uid(), starred: wasStarred.has(s.artist) }));
+      const dayKeys = dateList(t.startDate, t.endDate);
+      const daysObj = {};
+      Object.keys(t.days || {}).forEach((k) => {
+        daysObj[k] = (t.days[k] || []).filter((i) => !i.fromLineup);
+      });
+      lineup.forEach((a) => {
+        if (a.starred && a.date && dayKeys.includes(a.date)) {
+          const cur = daysObj[a.date] || [];
+          daysObj[a.date] = [...cur, { id: uid(), time: a.time || "12:00", title: planTitle(a), fromLineup: a.id }];
+        }
+      });
+      t = { ...t, lineup, days: daysObj };
       mutated = true;
     }
     if (!t.seededLineup || (t.lineupVersion || 0) < SEED_VERSION) {
@@ -454,17 +527,18 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save, gotoHeader }) {
 // ---- Lineup (Who's playing) ------------------------------------------------
 function Lineup({ trip, days, save }) {
   const [artist, setArtist] = useState("");
-  const [venue, setVenue] = useState("");
+  const [stage, setStage] = useState(STAGES[0]);
   const [date, setDate] = useState(days[0] || "");
   const [time, setTime] = useState("20:00");
   const [onlyStar, setOnlyStar] = useState(false);
   const [openDir, setOpenDir] = useState(null);
   const [editId, setEditId] = useState(null);
+  const [stageFilter, setStageFilter] = useState("All");
 
   const add = () => {
     if (!artist.trim()) return;
-    save({ ...trip, lineup: [...trip.lineup, { id: uid(), artist: artist.trim(), venue: venue.trim(), date, time, starred: false }] });
-    setArtist(""); setVenue("");
+    save({ ...trip, lineup: [...trip.lineup, { id: uid(), artist: artist.trim(), stage, venue: FEST_VENUE, date, time, endTime: "", starred: false }] });
+    setArtist("");
   };
   const star = (id) => {
     const act = trip.lineup.find((a) => a.id === id);
@@ -476,8 +550,7 @@ function Lineup({ trip, days, save }) {
       const cur = daysObj[act.date] || [];
       if (nowStar) {
         if (days.includes(act.date) && !cur.some((i) => i.fromLineup === act.id)) {
-          const title = act.venue ? `${act.artist} — ${act.venue}` : act.artist;
-          daysObj = { ...daysObj, [act.date]: [...cur, { id: uid(), time: act.time || "20:00", title, fromLineup: act.id }] };
+          daysObj = { ...daysObj, [act.date]: [...cur, { id: uid(), time: act.time || "12:00", title: planTitle(act), fromLineup: act.id }] };
         }
       } else if (cur.some((i) => i.fromLineup === act.id)) {
         daysObj = { ...daysObj, [act.date]: cur.filter((i) => i.fromLineup !== act.id) };
@@ -489,7 +562,7 @@ function Lineup({ trip, days, save }) {
     const act = trip.lineup.find((a) => a.id === id);
     let lineup = trip.lineup.map((a) => a.id === id ? { ...a, ...patch } : a);
     let daysObj = trip.days;
-    // Keep a starred act's auto-added Plans entry in sync with edited date/time/venue.
+    // Keep a starred act's auto-added Plans entry in sync with edited date/time/stage.
     if (act && act.starred) {
       const next = { ...act, ...patch };
       if (act.date && daysObj[act.date]) {
@@ -497,18 +570,18 @@ function Lineup({ trip, days, save }) {
       }
       if (next.date && days.includes(next.date)) {
         const cur = daysObj[next.date] || [];
-        const title = next.venue ? `${next.artist} — ${next.venue}` : next.artist;
-        daysObj = { ...daysObj, [next.date]: [...cur, { id: uid(), time: next.time || "20:00", title, fromLineup: id }] };
+        daysObj = { ...daysObj, [next.date]: [...cur, { id: uid(), time: next.time || "12:00", title: planTitle(next), fromLineup: id }] };
       }
     }
     save({ ...trip, lineup, days: daysObj });
   };
   const del = (id) => save({ ...trip, lineup: trip.lineup.filter((a) => a.id !== id) });
 
-  let list = trip.lineup.filter((a) => !onlyStar || a.starred);
+  let list = trip.lineup.filter((a) => (!onlyStar || a.starred) && (stageFilter === "All" || a.stage === stageFilter));
   const groups = {};
   list.forEach((a) => { const k = a.date || "Unscheduled"; (groups[k] = groups[k] || []).push(a); });
   const keys = Object.keys(groups).sort();
+  const presentStages = STAGES.filter((s) => trip.lineup.some((a) => a.stage === s));
 
   return (
     <>
@@ -522,8 +595,23 @@ function Lineup({ trip, days, save }) {
         </button>
       </div>
 
-      {trip.lineup.length === 0 && <Empty icon="music" title="Build your lineup" sub="Add the acts you're chasing — artist, venue, day, set time. Star the ones you can't miss." compact />}
-      {trip.lineup.length > 0 && list.length === 0 && <Empty icon="star" title="No must-sees yet" sub="Tap the star on any act to flag it." compact />}
+      {presentStages.length > 1 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
+          {["All", ...presentStages].map((s) => {
+            const on = stageFilter === s;
+            const col = s === "All" ? "var(--navy)" : (STAGE_COLOR[s] || "var(--navy)");
+            return (
+              <button key={s} onClick={() => setStageFilter(s)} className="np-mono"
+                style={{ fontSize: 11.3, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase", padding: "7px 11px", borderRadius: 10, cursor: "pointer", border: `1px solid ${on ? col : "var(--line)"}`, background: on ? col : "var(--surface)", color: on ? "#fff" : "var(--ink)", transition: "all .15s" }}>
+                {s === "All" ? "All stages" : s.replace(" Stage", "")}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {trip.lineup.length === 0 && <Empty icon="music" title="Build your lineup" sub="Add the acts you're chasing — artist, stage, day, set time. Star the ones you can't miss." compact />}
+      {trip.lineup.length > 0 && list.length === 0 && <Empty icon="star" title={onlyStar ? "No must-sees yet" : "Nothing on this stage"} sub={onlyStar ? "Tap the star on any act to flag it." : "Pick another stage, or All stages."} compact />}
 
       {keys.map((k) => (
         <div key={k} style={{ marginBottom: 16 }}>
@@ -531,7 +619,7 @@ function Lineup({ trip, days, save }) {
             {k === "Unscheduled" ? "Unscheduled — check the poster" : `${fmtChip(k).wd} · ${fmtChip(k).mo} ${fmtChip(k).day}`}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-            {groups[k].sort((a, b) => (a.time || "").localeCompare(b.time || "")).map((a) => {
+            {groups[k].slice().sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99")).map((a) => {
               const editing = editId === a.id;
               return (
               <div key={a.id} className="np-card np-pop" style={{ borderRadius: 15, padding: 14 }}>
@@ -540,9 +628,15 @@ function Lineup({ trip, days, save }) {
                     <Ico n="star" s={20} c="var(--coral)" fill={a.starred ? "var(--coral)" : "none"} />
                   </button>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.artist}</div>
-                    <div className="np-mono" style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 2 }}>
-                      {a.time || "—"}{a.venue ? ` · ${a.venue}` : ""}
+                    <div style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.2 }}>{a.artist}</div>
+                    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 7, marginTop: 5 }}>
+                      <span className="np-mono" style={{ fontSize: 11.5, fontWeight: 600, color: a.time ? "var(--ink)" : "var(--muted)" }}>{fmtSlot(a)}</span>
+                      {a.stage && (
+                        <span className="np-mono" style={{ fontSize: 9.8, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#fff", background: STAGE_COLOR[a.stage] || "var(--navy)", borderRadius: 6, padding: "3px 7px" }}>
+                          {a.stage.replace(" Stage", "")}
+                        </span>
+                      )}
+                      {!a.stage && <span className="np-mono" style={{ fontSize: 9.8, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--muted)", border: "1px dashed var(--line)", borderRadius: 6, padding: "2px 6px" }}>Stage TBA</span>}
                     </div>
                   </div>
                   <button onClick={() => setEditId(editing ? null : a.id)} aria-label="Edit" style={{ ...iconBtn, background: editing ? "var(--navy)" : "#F5F2EC" }}><Ico n="pencil" s={14} c={editing ? "#fff" : "var(--navy)"} /></button>
@@ -556,13 +650,21 @@ function Lineup({ trip, days, save }) {
                 {editing && (
                   <div className="np-pop" style={{ marginTop: 12, borderTop: "1.5px dashed var(--line)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
                     <input value={a.artist} onChange={(e) => updateAct(a.id, { artist: e.target.value })} placeholder="Artist / act" className="np-in" style={inStyle} />
-                    <input value={a.venue || ""} onChange={(e) => updateAct(a.id, { venue: e.target.value })} placeholder="Venue / stage" className="np-in" style={inStyle} />
+                    <select value={a.stage || ""} onChange={(e) => updateAct(a.id, { stage: e.target.value })} className="np-in np-mono" style={{ ...inStyle, fontSize: 12.5 }}>
+                      <option value="">Stage TBA</option>
+                      {STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
+                    </select>
                     <div style={{ display: "flex", gap: 8 }}>
                       <select value={a.date || ""} onChange={(e) => updateAct(a.id, { date: e.target.value })} className="np-in np-mono" style={{ ...inStyle, flex: 1, fontSize: 12.5 }}>
                         <option value="">No date</option>
                         {days.map((d) => <option key={d} value={d}>{`${fmtChip(d).wd} ${fmtChip(d).mo} ${fmtChip(d).day}`}</option>)}
                       </select>
-                      <input type="time" value={a.time || ""} onChange={(e) => updateAct(a.id, { time: e.target.value })} className="np-in np-mono" style={{ ...inStyle, width: 96, fontSize: 12.5 }} />
+                    </div>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <span className="np-mono" style={{ fontSize: 10, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--muted)", flexShrink: 0 }}>Set</span>
+                      <input type="time" value={a.time || ""} onChange={(e) => updateAct(a.id, { time: e.target.value })} className="np-in np-mono" style={{ ...inStyle, flex: 1, fontSize: 12.5 }} />
+                      <span className="np-mono" style={{ color: "var(--muted)", flexShrink: 0 }}>–</span>
+                      <input type="time" value={a.endTime || ""} onChange={(e) => updateAct(a.id, { endTime: e.target.value })} className="np-in np-mono" style={{ ...inStyle, flex: 1, fontSize: 12.5 }} />
                     </div>
                     <button onClick={() => setEditId(null)} className="np-mono" style={{ alignSelf: "flex-start", background: "var(--navy)", color: "#fff", border: "none", borderRadius: 10, padding: "8px 18px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Done</button>
                   </div>
@@ -577,7 +679,10 @@ function Lineup({ trip, days, save }) {
 
       <div className="np-card" style={{ borderRadius: 14, padding: 12, marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
         <input value={artist} onChange={(e) => setArtist(e.target.value)} placeholder="Artist / act" className="np-in" style={inStyle} />
-        <input value={venue} onChange={(e) => setVenue(e.target.value)} placeholder="Venue (e.g. Fort Adams State Park)" className="np-in" style={inStyle} />
+        <select value={stage} onChange={(e) => setStage(e.target.value)} className="np-in np-mono" style={{ ...inStyle, fontSize: 12.5 }}>
+          <option value="">Stage TBA</option>
+          {STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
         <div style={{ display: "flex", gap: 8 }}>
           {days.length ? (
             <select value={date} onChange={(e) => setDate(e.target.value)} className="np-in np-mono" style={{ ...inStyle, flex: 1, fontSize: 12.5 }}>
