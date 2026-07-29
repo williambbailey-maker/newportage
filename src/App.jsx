@@ -98,7 +98,7 @@ const STAGE_COLOR = {
   "Foundation Stage": "#A8873A",
 };
 const FEST_VENUE = "Fort Adams State Park";
-const SEED_VERSION = 2;
+const SEED_VERSION = 3;
 const DATES_VERSION = 2;
 const SEED_LINEUP = [
   // ---- Friday, July 31 ----
@@ -154,21 +154,6 @@ const SEED_LINEUP = [
   { artist: "Nate Chinen with Ambrose Akinmusire (title cropped)", stage: "Foundation Stage", date: "2026-08-01", time: "12:00", endTime: "12:25" },
   { artist: "Marcus J. Moore with Terri Lyne Carrington (title cropped)", stage: "Foundation Stage", date: "2026-08-01", time: "13:20", endTime: "13:45" },
   { artist: "Newport Jazz Camp", stage: "Foundation Stage", date: "2026-08-01", time: "14:45", endTime: "15:15" },
-
-  // ---- Sunday, August 2 — announced, set times not yet published ----
-  { artist: "Janelle Monáe", stage: "", date: "2026-08-02", time: "", endTime: "" },
-  { artist: "The Roots", stage: "", date: "2026-08-02", time: "", endTime: "" },
-  { artist: "Jacob Collier", stage: "", date: "2026-08-02", time: "", endTime: "" },
-  { artist: "Raye", stage: "", date: "2026-08-02", time: "", endTime: "" },
-  { artist: "Herbie Hancock", stage: "", date: "2026-08-02", time: "", endTime: "" },
-  { artist: "Thundercat", stage: "", date: "2026-08-02", time: "", endTime: "" },
-  { artist: "Lake Street Dive", stage: "", date: "2026-08-02", time: "", endTime: "" },
-  { artist: "Arlo Parks", stage: "", date: "2026-08-02", time: "", endTime: "" },
-  { artist: "Celeste", stage: "", date: "2026-08-02", time: "", endTime: "" },
-  { artist: "Sienna Spiro", stage: "", date: "2026-08-02", time: "", endTime: "" },
-  { artist: "Flea and the Honora Band", stage: "", date: "2026-08-02", time: "", endTime: "" },
-  { artist: "Charlie Hunter & Ella Feingold", stage: "", date: "2026-08-02", time: "", endTime: "" },
-  { artist: "The Bad Plus", stage: "", date: "2026-08-02", time: "", endTime: "" },
 ].map((a) => ({ venue: FEST_VENUE, starred: false, ...a }));
 
 const DEFAULT = {
@@ -178,7 +163,7 @@ const DEFAULT = {
   days: {}, places: [], lineup: [], seededLineup: false, lineupVersion: 0, datesVersion: 0,
 };
 const PLACE_CATS = ["Beach", "Eat", "See", "Do", "Sail", "Historic", "Shop", "Sweet", "Music", "Scenic"];
-const PLACES_VERSION = 1;
+const PLACES_VERSION = 2;
 
 // Evergreen Newport, RI + nearby (Middletown, Jamestown) picks — beaches, Gilded
 // Age mansions, colonial history, food, and things to fill the days around the fest.
@@ -242,6 +227,16 @@ const SEED_PLACES = [
   { category: "Sweet", name: "Del's Frozen Lemonade", summary: "The Rhode Island original — a slushy frozen lemonade sold from carts and stands all over town. Look for one near the wharves.", url: "https://www.google.com/search?q=Del%27s+Frozen+Lemonade+Newport+RI" },
   { category: "Sweet", name: "Aquidneck Ice Cream", summary: "A local scoop shop good for a post-beach or post-set treat downtown.", url: "https://www.google.com/search?q=Aquidneck+Ice+Cream+Newport+RI" },
   { category: "Sweet", name: "Sweet Berry Farm", summary: "Middletown farm stand with pick-your-own berries and excellent soft serve — a nice detour on the way to Second or Third Beach.", url: "https://www.google.com/search?q=Sweet+Berry+Farm+Middletown+RI" },
+  { category: "Sweet", name: "Newport Creamery", summary: "The Rhode Island institution — home of the Awful Awful ('awful big, awful good'), a thick frappe you can't get outside RI. Full diner menu too, so it doubles as an easy dinner. The Middletown location on West Main Rd is closest.", url: "https://www.google.com/search?q=Newport+Creamery+Middletown+RI" },
+  { category: "Sweet", name: "Gray's Ice Cream", summary: "A 1923 Tiverton Four Corners landmark and the area's most famous scoop — huge portions, dozens of flavors, walk-up window with a lawn. About 25 minutes out and worth the drive.", url: "https://www.google.com/search?q=Gray%27s+Ice+Cream+Tiverton+RI" },
+  { category: "Sweet", name: "Kilwins Newport", summary: "Thames Street shop turning out ice cream, hand-paddled fudge, and caramel apples — you smell it from the sidewalk. Right on the downtown walk.", url: "https://www.google.com/search?q=Kilwins+Newport+RI" },
+  { category: "Sweet", name: "Cold Fusion Gelato", summary: "Small-batch gelato made in-house, downtown near the wharves. A lighter, less-sweet alternative when everyone else is doing soft serve.", url: "https://www.google.com/search?q=Cold+Fusion+Gelato+Newport+RI" },
+  { category: "Sweet", name: "Frosty Freez", summary: "Classic seasonal Middletown soft-serve stand — walk-up window, picnic tables, no frills. The natural stop on the way back from Second Beach.", url: "https://www.google.com/search?q=Frosty+Freez+Middletown+RI" },
+  { category: "Sweet", name: "Easton's Beach Snack Bar", summary: "Soft serve and frozen lemonade right on the First Beach boardwalk next to the carousel. The most walkable ice cream from downtown — no car needed.", url: "https://www.google.com/search?q=Easton%27s+Beach+Snack+Bar+Newport+RI" },
+  { category: "Sweet", name: "Ben & Jerry's Newport", summary: "The Thames Street scoop shop — not local, but open late and right on the main drag when the line everywhere else is out the door.", url: "https://www.google.com/search?q=Ben+%26+Jerry%27s+Newport+RI" },
+  { category: "Sweet", name: "Brickley's Ice Cream", summary: "A South County cult favorite making small-batch ice cream — regularly voted the best in Rhode Island. A real drive (~40 min), so pair it with a Narragansett beach day.", url: "https://www.google.com/search?q=Brickley%27s+Ice+Cream+Wakefield+RI" },
+  { category: "Sweet", name: "The Daily Scoop", summary: "Bristol's waterfront scoop shop about 30 minutes up the bay — homemade flavors and a harbor walk after.", url: "https://www.google.com/search?q=The+Daily+Scoop+Bristol+RI" },
+  { category: "Sweet", name: "The Ice Cream Barn", summary: "A Swansea farm barn scooping its own ice cream, with animals out back and mini golf — about 35 minutes, and the most kid-shaped stop of the bunch.", url: "https://www.google.com/search?q=Ice+Cream+Barn+Swansea+MA" },
 
   // --- Shop ---
   { category: "Shop", name: "Spring Street & Bellevue Ave", summary: "Newport's historic downtown shopping strip — boutiques, galleries, and antique shops woven through colonial-era streets.", url: "https://www.google.com/search?q=Spring+Street+shopping+Newport+RI" },
@@ -549,7 +544,8 @@ function Lineup({ trip, days, save }) {
   const [stage, setStage] = useState(STAGES[0]);
   const [date, setDate] = useState(days[0] || "");
   const [time, setTime] = useState("20:00");
-  const [onlyStar, setOnlyStar] = useState(false);
+  // Opens on your must-sees; the pill (or the empty-state button) flips to the full schedule.
+  const [onlyStar, setOnlyStar] = useState(true);
   const [openDir, setOpenDir] = useState(null);
   const [editId, setEditId] = useState(null);
   const [stageFilter, setStageFilter] = useState("All");
@@ -607,10 +603,10 @@ function Lineup({ trip, days, save }) {
       <div className="np-card" style={{ borderRadius: 15, padding: "14px 16px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <div className="np-mono" style={{ fontSize: 10, letterSpacing: ".14em", color: "var(--coral)", textTransform: "uppercase" }}>Festival</div>
-          <div style={{ fontSize: 19, fontWeight: 700, lineHeight: 1.1 }}>Who's playing</div>
+          <div style={{ fontSize: 19, fontWeight: 700, lineHeight: 1.1 }}>{onlyStar ? "Your must-sees" : "Who's playing"}</div>
         </div>
-        <button onClick={() => setOnlyStar((v) => !v)} className="np-mono" style={{ display: "flex", alignItems: "center", gap: 5, border: "1px solid var(--line)", background: onlyStar ? "var(--coral)" : "transparent", color: onlyStar ? "#fff" : "var(--muted)", borderRadius: 10, padding: "7px 11px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-          <Ico n="star" s={13} c={onlyStar ? "#fff" : "var(--coral)"} fill={onlyStar ? "#fff" : "none"} /> Must-see
+        <button onClick={() => setOnlyStar((v) => !v)} aria-pressed={onlyStar} className="np-mono" style={{ display: "flex", alignItems: "center", gap: 5, border: "1px solid var(--line)", background: onlyStar ? "var(--coral)" : "transparent", color: onlyStar ? "#fff" : "var(--muted)", borderRadius: 10, padding: "7px 11px", fontSize: 11, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
+          <Ico n="star" s={13} c={onlyStar ? "#fff" : "var(--coral)"} fill={onlyStar ? "#fff" : "none"} /> {onlyStar ? "Must-see" : "All sets"}
         </button>
       </div>
 
@@ -630,7 +626,13 @@ function Lineup({ trip, days, save }) {
       )}
 
       {trip.lineup.length === 0 && <Empty icon="music" title="Build your lineup" sub="Add the acts you're chasing — artist, stage, day, set time. Star the ones you can't miss." compact />}
-      {trip.lineup.length > 0 && list.length === 0 && <Empty icon="star" title={onlyStar ? "No must-sees yet" : "Nothing on this stage"} sub={onlyStar ? "Tap the star on any act to flag it." : "Pick another stage, or All stages."} compact />}
+      {trip.lineup.length > 0 && list.length === 0 && (
+        onlyStar
+          ? <Empty icon="star" title="No must-sees yet"
+              sub="Open the full schedule and tap the star on any set. Starred sets live here and drop onto the right day in Plans."
+              action="Show full schedule" onAction={() => { setOnlyStar(false); setStageFilter("All"); }} compact />
+          : <Empty icon="star" title="Nothing on this stage" sub="Pick another stage, or All stages." compact />
+      )}
 
       {keys.map((k) => (
         <div key={k} style={{ marginBottom: 16 }}>
