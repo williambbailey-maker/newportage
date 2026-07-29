@@ -99,6 +99,7 @@ const STAGE_COLOR = {
 };
 const FEST_VENUE = "Fort Adams State Park";
 const SEED_VERSION = 2;
+const DATES_VERSION = 2;
 const SEED_LINEUP = [
   // ---- Friday, July 31 ----
   { artist: "Local Jam", stage: "Fort Stage", date: "2026-07-31", time: "11:30", endTime: "12:00" },
@@ -173,8 +174,8 @@ const SEED_LINEUP = [
 const DEFAULT = {
   name: "Newport Jazz Fest Trip", destination: "Newport, RI",
   homeBase: "",
-  startDate: "2026-07-30", endDate: "2026-08-03",
-  days: {}, places: [], lineup: [], seededLineup: false, lineupVersion: 0, datesFixed: false,
+  startDate: "2026-07-30", endDate: "2026-08-02",
+  days: {}, places: [], lineup: [], seededLineup: false, lineupVersion: 0, datesVersion: 0,
 };
 const PLACE_CATS = ["Beach", "Eat", "See", "Do", "Sail", "Historic", "Shop", "Sweet", "Music", "Scenic"];
 const PLACES_VERSION = 1;
@@ -285,7 +286,7 @@ export default function App() {
       lineup.forEach((a) => {
         if (a.starred && a.date && dayKeys.includes(a.date)) {
           const cur = daysObj[a.date] || [];
-          daysObj[a.date] = [...cur, { id: uid(), time: a.time || "12:00", title: planTitle(a), fromLineup: a.id }];
+          daysObj[a.date] = [...cur, { id: uid(), time: a.time || "", title: planTitle(a), fromLineup: a.id }];
         }
       });
       t = { ...t, lineup, days: daysObj };
@@ -295,8 +296,10 @@ export default function App() {
       t = { ...t, seededLineup: true, lineupVersion: SEED_VERSION };
       mutated = true;
     }
-    if (!t.datesFixed) {
-      t = { ...t, startDate: DEFAULT.startDate, endDate: DEFAULT.endDate, datesFixed: true };
+    if ((t.datesVersion || 0) < DATES_VERSION) {
+      // Trip now ends Sunday with the festival — Monday Aug 3 is dropped. Anything
+      // parked on a dropped day stays in storage, so extending the dates brings it back.
+      t = { ...t, startDate: DEFAULT.startDate, endDate: DEFAULT.endDate, datesVersion: DATES_VERSION };
       mutated = true;
     }
     if ((t.placesVersion || 0) < PLACES_VERSION) {
@@ -446,15 +449,17 @@ function Header({ trip, countdown, editing, onEdit, onClose, onSave }) {
 // ---- Itinerary --------------------------------------------------------------
 function Itinerary({ trip, days, activeDay, setActiveDay, save, gotoHeader }) {
   const [time, setTime] = useState("09:00");
+  const [allDay, setAllDay] = useState(false);
   const [title, setTitle] = useState("");
   const [editId, setEditId] = useState(null);
   if (!days.length)
     return <Empty icon="cal" title="Set your dates first" sub="Add a start and end date and your trip days appear here, ready to fill." action="Add travel dates" onAction={gotoHeader} />;
 
-  const items = (trip.days[activeDay] || []).slice().sort((a, b) => a.time.localeCompare(b.time));
+  // Untimed ("any time") items float to the top of the day, ahead of the schedule.
+  const items = (trip.days[activeDay] || []).slice().sort((a, b) => (a.time || "").localeCompare(b.time || ""));
   const add = () => {
     if (!title.trim()) return;
-    save({ ...trip, days: { ...trip.days, [activeDay]: [...(trip.days[activeDay] || []), { id: uid(), time, title: title.trim() }] } });
+    save({ ...trip, days: { ...trip.days, [activeDay]: [...(trip.days[activeDay] || []), { id: uid(), time: allDay ? "" : time, title: title.trim() }] } });
     setTitle("");
   };
   const del = (id) => {
@@ -481,7 +486,7 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save, gotoHeader }) {
         })}
       </div>
       {items.length === 0
-        ? <Empty icon="nav" title="Nothing planned yet" sub="Add a set, a beach block, dinner — anything with a time." compact />
+        ? <Empty icon="nav" title="Nothing planned yet" sub="Add a set, a beach block, dinner — with a time, or any-time for loose ideas." compact />
         : <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{items.map((it) => {
           const editing = editId === it.id;
           return (
@@ -489,8 +494,10 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save, gotoHeader }) {
             <div style={{ display: "flex", alignItems: "stretch" }}>
               <button onClick={() => setEditId(editing ? null : it.id)} aria-label="Edit time"
                 style={{ flexShrink: 0, width: 68, border: "none", borderRight: "1.5px dashed var(--line)", background: "#F5F2EC", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "14px 6px" }}>
-                <Ico n={it.fromLineup ? "music" : "cal"} s={11} c="var(--coral)" />
-                <span className="np-mono" style={{ fontSize: 13.5, fontWeight: 700, color: "var(--navy)", letterSpacing: ".01em" }}>{it.time}</span>
+                <Ico n={it.fromLineup ? "music" : it.time ? "cal" : "sun"} s={11} c="var(--coral)" />
+                {it.time
+                  ? <span className="np-mono" style={{ fontSize: 13.5, fontWeight: 700, color: "var(--navy)", letterSpacing: ".01em" }}>{it.time}</span>
+                  : <span className="np-mono" style={{ fontSize: 9.5, fontWeight: 700, color: "var(--muted)", letterSpacing: ".06em", textTransform: "uppercase", lineHeight: 1.25 }}>Any<br />time</span>}
               </button>
               <div style={{ flex: 1, minWidth: 0, padding: "12px 10px 12px 14px", display: "flex", alignItems: "flex-start", gap: 6 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -504,9 +511,13 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save, gotoHeader }) {
             </div>
             {editing && (
               <div className="np-pop" style={{ borderTop: "1.5px dashed var(--line)", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                   <span className="np-mono" style={{ fontSize: 10, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted)" }}>Time</span>
-                  <input type="time" value={it.time} onChange={(e) => update(it.id, { time: e.target.value })} className="np-in np-mono" style={{ ...inStyle, width: 120, fontSize: 13, padding: "9px 8px" }} />
+                  <input type="time" value={it.time || ""} onChange={(e) => update(it.id, { time: e.target.value })} disabled={!it.time} className="np-in np-mono" style={{ ...inStyle, width: 120, fontSize: 13, padding: "9px 8px", opacity: it.time ? 1 : .45 }} />
+                  <button onClick={() => update(it.id, { time: it.time ? "" : "12:00" })} className="np-mono"
+                    style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", padding: "8px 11px", borderRadius: 9, cursor: "pointer", border: `1px solid ${!it.time ? "var(--coral)" : "var(--line)"}`, background: !it.time ? "var(--coral)" : "transparent", color: !it.time ? "#fff" : "var(--muted)" }}>
+                    Any time
+                  </button>
                 </div>
                 <textarea value={it.note || ""} onChange={(e) => update(it.id, { note: e.target.value })} placeholder="Add a note — confirmation #, who's coming, what to bring…" rows={3} className="np-in" style={{ ...inStyle, resize: "vertical", lineHeight: 1.45, minHeight: 64 }} />
                 <button onClick={() => setEditId(null)} className="np-mono" style={{ alignSelf: "flex-start", background: "var(--navy)", color: "#fff", border: "none", borderRadius: 10, padding: "8px 18px", fontSize: 12, fontWeight: 600, cursor: "pointer", letterSpacing: ".01em" }}>Done</button>
@@ -515,10 +526,18 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save, gotoHeader }) {
           </div>);
         })}
         </div>}
-      <div className="np-card" style={{ borderRadius: 14, padding: 10, display: "flex", gap: 8, marginTop: 8, alignItems: "center" }}>
-        <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="np-in np-mono" style={{ ...inStyle, width: 90, fontSize: 12.5, padding: "9px 8px" }} />
-        <input value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} placeholder="Add a plan…" className="np-in" style={{ ...inStyle, flex: 1 }} />
-        <button onClick={add} aria-label="Add plan" style={addBtn}><Ico n="plus" s={18} c="#fff" /></button>
+      <div className="np-card" style={{ borderRadius: 14, padding: 10, marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} disabled={allDay} className="np-in np-mono" style={{ ...inStyle, width: 90, fontSize: 12.5, padding: "9px 8px", opacity: allDay ? .45 : 1 }} />
+          <button onClick={() => setAllDay((v) => !v)} aria-pressed={allDay} className="np-mono"
+            style={{ flex: 1, fontSize: 10.5, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", padding: "10px 8px", borderRadius: 9, cursor: "pointer", border: `1px solid ${allDay ? "var(--coral)" : "var(--line)"}`, background: allDay ? "var(--coral)" : "transparent", color: allDay ? "#fff" : "var(--muted)" }}>
+            Any time
+          </button>
+        </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <input value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} placeholder="Add a plan…" className="np-in" style={{ ...inStyle, flex: 1 }} />
+          <button onClick={add} aria-label="Add plan" style={addBtn}><Ico n="plus" s={18} c="#fff" /></button>
+        </div>
       </div>
     </>
   );
@@ -550,7 +569,7 @@ function Lineup({ trip, days, save }) {
       const cur = daysObj[act.date] || [];
       if (nowStar) {
         if (days.includes(act.date) && !cur.some((i) => i.fromLineup === act.id)) {
-          daysObj = { ...daysObj, [act.date]: [...cur, { id: uid(), time: act.time || "12:00", title: planTitle(act), fromLineup: act.id }] };
+          daysObj = { ...daysObj, [act.date]: [...cur, { id: uid(), time: act.time || "", title: planTitle(act), fromLineup: act.id }] };
         }
       } else if (cur.some((i) => i.fromLineup === act.id)) {
         daysObj = { ...daysObj, [act.date]: cur.filter((i) => i.fromLineup !== act.id) };
@@ -570,7 +589,7 @@ function Lineup({ trip, days, save }) {
       }
       if (next.date && days.includes(next.date)) {
         const cur = daysObj[next.date] || [];
-        daysObj = { ...daysObj, [next.date]: [...cur, { id: uid(), time: next.time || "12:00", title: planTitle(next), fromLineup: id }] };
+        daysObj = { ...daysObj, [next.date]: [...cur, { id: uid(), time: next.time || "", title: planTitle(next), fromLineup: id }] };
       }
     }
     save({ ...trip, lineup, days: daysObj });
@@ -719,7 +738,7 @@ function Places({ trip, days, save }) {
   };
   const del = (id) => save({ ...trip, places: trip.places.filter((p) => p.id !== id) });
   const addToPlan = (p, iso) => {
-    const item = { id: uid(), time: "12:00", title: p.name };
+    const item = { id: uid(), time: "", title: p.name };
     save({ ...trip, days: { ...trip.days, [iso]: [...(trip.days[iso] || []), item] } });
     setJustAdded({ id: p.id, iso });
   };
@@ -871,7 +890,7 @@ function Places({ trip, days, save }) {
                   </div>
                   {justAdded && justAdded.id === p.id && (
                     <div className="np-mono" style={{ fontSize: 11.9, color: "var(--coral)", marginTop: 9, lineHeight: 1.4 }}>
-                      Added to your Plans at noon — open the Plans tab to set the time.
+                      Added to your Plans as an any-time item — open Plans to give it a time.
                     </div>
                   )}
                 </div>
