@@ -118,6 +118,7 @@ const PATHS = {
   locate: <><circle cx="12" cy="12" r="7" /><line x1="12" y1="2" x2="12" y2="5" /><line x1="12" y1="19" x2="12" y2="22" /><line x1="2" y1="12" x2="5" y2="12" /><line x1="19" y1="12" x2="22" y2="12" /><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" /></>,
   sun: <><circle cx="12" cy="12" r="4.2" /><path d="M12 2v2.4M12 19.6V22M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2 12h2.4M19.6 12H22M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" /></>,
   chevron: <polyline points="6 9 12 15 18 9" />,
+  gear: <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" /></>,
 };
 function Ico({ n, s = 16, c = "currentColor", w = 2, fill = "none", style }) {
   return (
@@ -274,6 +275,18 @@ const PLANS_ADDS = [
       near: "30 Bannister's Wharf, Newport",
       summary: "A Newport waterfront institution since 1973 — clam chowder and New England seafood in the casual Tavern or the al fresco Waterside Patio, right on Bannister's Wharf.",
       url: "https://www.opentable.com/r/black-pearl-newport",
+    },
+  },
+  {
+    id: "seaside-scoops-2026-07-30",
+    date: "2026-07-30",
+    place: {
+      id: "place-seaside-scoops",
+      category: "Sweet",
+      name: "Seaside Scoops",
+      near: "225 Goddard Row, Newport",
+      summary: "Beach-vintage ice cream shop in the Brick Marketplace, downtown Newport — a quick scoop stop between festival sets.",
+      url: "https://www.seasidescoopsnewport.com/",
     },
   },
 ];
@@ -493,9 +506,11 @@ function Header({ trip, countdown }) {
 function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
   const [title, setTitle] = useState("");
   const [expanded, setExpanded] = useState(() => new Set()); // ids showing their full detail
+  const [menuFor, setMenuFor] = useState(null); // id whose move/delete menu is open
   const toggleExpanded = (id) => setExpanded((cur) => {
     const next = new Set(cur);
-    next.has(id) ? next.delete(id) : next.add(id);
+    if (next.has(id)) { next.delete(id); setMenuFor((m) => (m === id ? null : m)); }
+    else next.add(id);
     return next;
   });
 
@@ -509,6 +524,11 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
     setTitle("");
   };
   const del = (id) => save({ ...trip, days: { ...trip.days, [activeDay]: items.filter((i) => i.id !== id) } });
+  const moveTo = (it, iso) => {
+    if (iso === activeDay) { setMenuFor(null); return; }
+    save({ ...trip, days: { ...trip.days, [activeDay]: items.filter((i) => i.id !== it.id), [iso]: [...(trip.days[iso] || []), it] } });
+    setMenuFor(null);
+  };
 
   return (
     <>
@@ -531,26 +551,29 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
           // the same info as its Spots card — category, summary, more-info link.
           const sourcePlace = it.fromPlace ? trip.places.find((p) => p.id === it.fromPlace) : null;
           const hasDetail = !!(sourcePlace || it.note);
-          const open = hasDetail && expanded.has(it.id);
+          const open = expanded.has(it.id);
+          const menuOpen = menuFor === it.id;
           return (
           <SwipeRow key={it.id} onDelete={() => del(it.id)} label={it.title}>
           <div className="np-card np-pop" style={{ borderRadius: 32, padding: 14 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              {hasDetail ? (
-                // Deliberately a <div>, not a <button>: SwipeRow only excludes
-                // real form controls from its swipe-start check, so this stays
-                // swipeable from anywhere on the row while a plain tap (no
-                // drag) still fires the native click below to toggle detail.
-                <div role="button" tabIndex={0} onClick={() => toggleExpanded(it.id)}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleExpanded(it.id); } }}
-                  aria-expanded={open} aria-label={`${open ? "Collapse" : "Expand"} ${it.title}`}
-                  style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, cursor: "pointer" }}>
-                  <span style={{ fontSize: 20.4, fontWeight: 700, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.title}</span>
-                  <Ico n="chevron" s={18} c="var(--dim)" w={2.3}
-                    style={{ flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: "transform 200ms var(--ease)" }} />
-                </div>
-              ) : (
-                <div style={{ flex: 1, minWidth: 0, fontSize: 20.4, fontWeight: 700, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.title}</div>
+              {/* Deliberately a <div>, not a <button>: SwipeRow only excludes
+                  real form controls from its swipe-start check, so this stays
+                  swipeable from anywhere on the row while a plain tap (no
+                  drag) still fires the native click below to toggle detail. */}
+              <div role="button" tabIndex={0} onClick={() => toggleExpanded(it.id)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleExpanded(it.id); } }}
+                aria-expanded={open} aria-label={`${open ? "Collapse" : "Expand"} ${it.title}`}
+                style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, cursor: "pointer" }}>
+                <span style={{ fontSize: 20.4, fontWeight: 700, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.title}</span>
+                <Ico n="chevron" s={18} c="var(--dim)" w={2.3}
+                  style={{ flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: "transform 200ms var(--ease)" }} />
+              </div>
+              {open && (
+                <button onClick={() => setMenuFor((m) => (m === it.id ? null : it.id))} aria-label="Reschedule or delete"
+                  aria-expanded={menuOpen} style={{ ...ghost, flexShrink: 0, width: 32, height: 32, color: menuOpen ? "var(--shout)" : "var(--dim)" }}>
+                  <Ico n="gear" s={18} c="currentColor" w={1.9} />
+                </button>
               )}
             </div>
 
@@ -574,6 +597,27 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
                 {/* Seeded blocks carry their own standing detail (e.g. the fest
                     venue and end time); it's fixed copy, not an editable note. */}
                 {it.note && <div style={{ fontSize: 14.9, color: "var(--dim)", lineHeight: 1.5, marginTop: sourcePlace ? 9 : 11 }}>{it.note}</div>}
+
+                {menuOpen && (
+                  <div style={{ marginTop: hasDetail ? 11 : 0, borderTop: hasDetail ? "1px solid var(--glass-line)" : "none", paddingTop: hasDetail ? 11 : 0 }}>
+                    <div className="np-mono" style={{ fontSize: 11.9, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--dim)", marginBottom: 8 }}>Move to</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {days.map((iso) => {
+                        const c = fmtChip(iso); const on = iso === activeDay;
+                        return (
+                          <button key={iso} disabled={on} onClick={() => moveTo(it, iso)} className="np-mono"
+                            style={{ fontSize: 13.1, padding: "7px 11px", borderRadius: 999, cursor: on ? "default" : "pointer", border: "1px solid var(--glass-line)", background: on ? "var(--shout)" : "rgba(242,223,198,.06)", color: on ? "var(--ink)" : "var(--white)", opacity: on ? .55 : 1 }}>
+                            {c.wd} {c.mo} {c.day}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <button onClick={() => del(it.id)} className="np-mono"
+                      style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, fontSize: 13.1, fontWeight: 600, color: "var(--orange)", background: "none", border: "none", padding: 0, cursor: "pointer" }}>
+                      <Ico n="trash" s={14} c="var(--orange)" w={2.2} /> Delete
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
