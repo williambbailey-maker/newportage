@@ -1,7 +1,7 @@
 // Newportage service worker — caches the app shell so it opens offline.
 // Bumped whenever cached assets change (e.g. the app icons) — `activate` drops
 // every cache that isn't this one, so clients pick up the new files.
-const CACHE = "newportage-v2";
+const CACHE = "newportage-v3";
 
 self.addEventListener("install", (e) => {
   self.skipWaiting();

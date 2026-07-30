@@ -1,7 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <rect width="512" height="512" fill="#0C1430"/>
-  <text x="256" y="312" text-anchor="middle" font-family="Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-weight="800" font-size="248" fill="#F2DFC6" letter-spacing="-10">NJ</text>
-  <rect x="116" y="352" width="84" height="24" rx="12" fill="#EB5A23"/>
-  <rect x="214" y="352" width="84" height="24" rx="12" fill="#F0B81B"/>
-  <rect x="312" y="352" width="84" height="24" rx="12" fill="#1E86B5"/>
+  <g transform="translate(-191.9 -211.1) scale(1.743)">
+    <text x="256" y="312" text-anchor="middle" font-family="Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-weight="800" font-size="248" fill="#F2DFC6" letter-spacing="-10">NJ</text>
+    <rect x="116" y="356" width="84" height="40" rx="20" fill="#EB5A23"/>
+    <rect x="214" y="356" width="84" height="40" rx="20" fill="#F0B81B"/>
+    <rect x="312" y="356" width="84" height="40" rx="20" fill="#1E86B5"/>
+  </g>
 </svg>
