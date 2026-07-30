@@ -383,7 +383,7 @@ export default function App() {
       <div className="np-col">
         <Header trip={trip} countdown={countdown} />
 
-        <div className="np-card" style={{ display: "flex", gap: 4, padding: 5, borderRadius: 999, marginTop: 20, position: "sticky", top: 10, zIndex: 5 }}>
+        <div className="np-card" style={{ display: "flex", gap: 4, padding: 5, borderRadius: 999, marginTop: 20 }}>
           {TABS.map(([id, icon, label]) => (
             <button key={id} onClick={() => setTab(id)} aria-pressed={tab === id}
               style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "10px 0", borderRadius: 999, border: "none", cursor: "pointer", fontSize: 12.7, fontWeight: 700, letterSpacing: "-.01em", background: tab === id ? "var(--shout)" : "transparent", color: tab === id ? "var(--ink)" : "rgba(242,223,198,.55)" }}>
