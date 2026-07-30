@@ -250,7 +250,7 @@ const DEFAULT = {
   homeBase: "",
   startDate: "2026-07-30", endDate: "2026-08-02",
   days: {}, places: [], lineup: [], seededLineup: false, lineupVersion: 0, datesVersion: 0, plansVersion: 0,
-  plansAddsApplied: [],
+  plansAddsApplied: [], spotsVersion: 0,
 };
 // Plans stays free of individual sets — Lineup is the record of who's playing
 // when. Instead, each festival day gets one standing block. Plans items carry
@@ -291,11 +291,94 @@ const PLANS_ADDS = [
   },
 ];
 // Categories a Plans item can carry when it's sourced from a saved spot.
-// Eleven categories against a four-ink poster, so these fan out within the
-// artwork's temperature range — warm vermillion through gold, cool blue through
-// teal — instead of introducing hues the poster doesn't contain.
-const TAG_COLOR = { Beach: "#1E86B5", Eat: "#EB5A23", See: "#5AA8CC", Do: "#F0B81B", Sail: "#2C9AA8", Historic: "#C98F2B", Nature: "#7FA85C", Shop: "#D9795E", Sweet: "#E9A98C", Music: "#3D6FA8", Scenic: "#86C0D6" };
+// These fan out within the poster's temperature range — warm vermillion through
+// gold, cool blue through teal — instead of introducing hues it doesn't contain.
+const TAG_COLOR = {
+  Beach: "#1E86B5", Eat: "#EB5A23", See: "#5AA8CC", Do: "#F0B81B", Sail: "#2C9AA8",
+  Historic: "#C98F2B", Nature: "#7FA85C", Shop: "#D9795E", Sweet: "#E9A98C",
+  Music: "#3D6FA8", Scenic: "#86C0D6",
+  "Clam Cakes": "#E0A03A", "Fun stuff": "#F0B81B", "Ice Cream": "#E9A98C", Food: "#EB5A23",
+};
 const PLACES_VERSION = 3;
+
+// Spots are seeded by id, so re-running the migration never duplicates one and
+// never resurrects a spot you already scheduled or deleted. "More info" points
+// at a Maps search rather than a homepage — for a trip that's the more useful
+// link (hours, phone, directions, reviews) and it can't rot.
+const SPOTS_VERSION = 1;
+const mapsUrl = (q) => `https://www.google.com/maps/search/?api=1&query=${enc(q)}`;
+const spot = (id, category, name, near, summary) =>
+  ({ id: `place-${id}`, category, name, near, summary, url: mapsUrl(`${name} ${near}`) });
+
+const SPOTS_SEED = [
+  // ---- Clam Cakes ----
+  spot("aunt-carries", "Clam Cakes", "Aunt Carrie's", "Narragansett, RI",
+    "The OG, over 100 years running and named an American Classic by the James Beard Foundation. Get the chowder-and-clam-cake combo and dunk the cakes right in."),
+  spot("champlins", "Clam Cakes", "Champlin's Seafood", "Galilee, Narragansett, RI",
+    "Regulars swear these are the best clam cakes in RI, right on the water in Galilee. Also a solid fish market if you want to cook your own."),
+  spot("iggys-narragansett", "Clam Cakes", "Iggy's Doughboys & Chowder House", "Narragansett, RI",
+    "The other big name, famous for both clam cakes and doughboys. Try the white and the clear RI-style chowder — most people say the clear broth is more authentic."),
+  spot("monahans", "Clam Cakes", "Monahan's Clam Shack by the Sea", "Narragansett, RI",
+    "Oceanfront, with huge clam cakes actually loaded with clam."),
+  spot("roy-boys", "Clam Cakes", "Roy Boy's Clam Shack", "North Kingstown, RI",
+    "Won the Providence Journal's Rhode Island's Best Clam Shack title. Walk-up window, classic nostalgic vibe, fresh clam cakes."),
+  spot("gardners-wharf", "Clam Cakes", "Gardner's Wharf Seafood", "Wickford, North Kingstown, RI",
+    "Quieter wharf-side spot in Wickford — good chowder and clam cakes with harbor views."),
+  spot("flos", "Clam Cakes", "Flo's Clam Shack", "Middletown, RI",
+    "Around since 1936. Classic beach-shack seafood with clam cakes and lobster rolls — best from the upstairs seating overlooking Easton Beach."),
+  spot("iggys-newport", "Clam Cakes", "Iggy's Doughboys", "Newport, RI",
+    "The Newport-side Iggy's — same clam cakes and doughboys, closer to the festival."),
+
+  // ---- Nature ----
+  spot("brenton-point", "Nature", "Brenton Point State Park", "Newport, RI",
+    "Oceanfront point at the end of Ocean Drive — big sky, big surf, and the best kite-flying in Newport."),
+  spot("sachuest-point", "Nature", "Sachuest Point National Wildlife Refuge", "Middletown, RI",
+    "Coastal refuge with looping shoreline trails, seabirds, and wide-open Atlantic views."),
+  spot("ballard-park", "Nature", "Ballard Park", "Newport, RI",
+    "Quiet wooded park in an old quarry — shaded walking trails and a natural amphitheater."),
+  spot("kayak-centre", "Nature", "The Kayak Centre", "Wickford, North Kingstown, RI",
+    "Kayak rentals and guided paddles out of Wickford harbor and the surrounding coves."),
+  spot("rome-point", "Nature", "John H. Chafee Rome Point Preserve", "North Kingstown, RI",
+    "Easy wooded trail out to a rocky beach on the bay — a well-known spot for watching harbor seals."),
+
+  // ---- Fun stuff ----
+  spot("wickford-village", "Fun stuff", "Wickford Village", "North Kingstown, RI",
+    "Postcard-perfect colonial harbor village — independent shops, galleries, and waterfront wandering."),
+  spot("green-animals", "Fun stuff", "Green Animals Topiary Garden", "Portsmouth, RI",
+    "The oldest topiary garden in the country: dozens of animals clipped out of hedges on a bayside estate."),
+  spot("point-judith", "Fun stuff", "Point Judith Lighthouse", "Narragansett, RI",
+    "Working lighthouse on a dramatic stretch of coast where the bay meets the open ocean."),
+  spot("casey-farm", "Fun stuff", "Casey Farm", "Saunderstown, North Kingstown, RI",
+    "Working coastal farm dating to the 1750s, with a seasonal farmers market and bay views."),
+  spot("jamestown-windmill", "Fun stuff", "Jamestown Windmill", "Jamestown, RI",
+    "Restored 1787 smock windmill standing alone in an open field — a quick, photogenic stop on Conanicut Island."),
+
+  // ---- Ice Cream ----
+  spot("newport-creamery", "Ice Cream", "Newport Creamery", "Newport, RI",
+    "Rhode Island institution — come for the Awful Awful, stay for the sundaes."),
+  spot("apponaug-creamery", "Ice Cream", "Apponaug Village Creamery", "Warwick, RI",
+    "Village creamery with a long list of hard-serve flavors and generous scoops."),
+
+  // ---- Food ----
+  spot("rome-point-cafe", "Food", "Rome Point Café", "North Kingstown, RI",
+    "4.8★ old-school diner charm — known for the best eggs benedict around."),
+  spot("maes-place", "Food", "Mae's Place", "North Kingstown, RI",
+    "Busy little diner with big portions. Try the Caprese Benedict."),
+  spot("breakfast-nook", "Food", "Breakfast Nook", "North Kingstown, RI",
+    "Classic small diner — fast and cheap, and the regulars swear by it."),
+  spot("karies-kitchen", "Food", "Karie's Kitchen", "Wickford, North Kingstown, RI",
+    "Farm-to-table diner with huge portions. The corned beef hash benedict is the move."),
+  spot("corner-cafe", "Food", "Corner Café", "Newport, RI",
+    "Beloved for pancakes and benedicts — there's a line, but it moves fast."),
+  spot("cru-cafe", "Food", "CRU Cafe", "Newport, RI",
+    "Order-and-flag-your-table system and a big brunch menu — quick despite the crowds."),
+  spot("annies", "Food", "Annie's", "Newport, RI",
+    "Old-school local institution serving classic American breakfast. Cozy and fast."),
+  spot("jitters-cafe", "Food", "Jitters Cafe", "North Kingstown, RI",
+    "Quick counter service with solid breakfast sandwiches. Opens at 6:30am."),
+  spot("east-ferry", "Food", "East Ferry Market & Deli", "Jamestown, RI",
+    "Halfway point between Newport and North Kingstown — deli-style breakfast sandwiches with a harbor view."),
+];
 
 export default function App() {
   const [trip, setTrip] = useState(DEFAULT);
@@ -389,6 +472,14 @@ export default function App() {
         mutated = true;
       }
     }
+    if ((t.spotsVersion || 0) < SPOTS_VERSION) {
+      // Seed the Spots list by id. Anything already present (scheduled into a
+      // day, or edited) is left exactly as it is.
+      const have = new Set((t.places || []).map((p) => p.id));
+      const fresh = SPOTS_SEED.filter((s) => !have.has(s.id));
+      t = { ...t, places: [...(t.places || []), ...fresh], spotsVersion: SPOTS_VERSION };
+      mutated = true;
+    }
     if (mutated) {
       try {
         if (typeof window !== "undefined" && window.localStorage)
@@ -423,7 +514,7 @@ export default function App() {
       </div>
     );
 
-  const TABS = [["itinerary", "cal", "Plans"], ["lineup", "music", "Lineup"]];
+  const TABS = [["itinerary", "cal", "Plans"], ["lineup", "music", "Lineup"], ["places", "pin", "Spots"]];
 
   return (
     <div className="np-app">
@@ -443,6 +534,7 @@ export default function App() {
         <div style={{ marginTop: 20 }} key={tab} className="np-pop">
           {tab === "itinerary" && <Itinerary trip={trip} days={days} activeDay={activeDay} setActiveDay={setActiveDay} save={save} />}
           {tab === "lineup" && <Lineup trip={trip} save={save} />}
+          {tab === "places" && <Places trip={trip} days={days} save={save} setTab={setTab} setActiveDay={setActiveDay} />}
         </div>
 
         <div style={{ textAlign: "center", marginTop: 30 }}>
@@ -718,6 +810,128 @@ function Lineup({ trip, save }) {
   );
 }
 
+// ---- Spots -----------------------------------------------------------------
+// Places you might go, grouped by tag. Scheduling one hands it to Plans — and
+// because a spot is listed here only while nothing in Plans points at it, the
+// card leaves this tab on its own. Delete that Plans item later and the spot
+// comes back, so nothing is ever lost by scheduling.
+function Places({ trip, days, save, setTab, setActiveDay }) {
+  const [expanded, setExpanded] = useState(() => new Set());
+  const [pickerFor, setPickerFor] = useState(null);
+  const [filterCat, setFilterCat] = useState("All");
+
+  const toggleExpanded = (id) => setExpanded((cur) => {
+    const next = new Set(cur);
+    if (next.has(id)) { next.delete(id); setPickerFor((p) => (p === id ? null : p)); }
+    else next.add(id);
+    return next;
+  });
+
+  const scheduled = new Set();
+  Object.keys(trip.days || {}).forEach((k) => {
+    (trip.days[k] || []).forEach((i) => { if (i.fromPlace) scheduled.add(i.fromPlace); });
+  });
+  const available = (trip.places || []).filter((p) => !scheduled.has(p.id));
+
+  const cats = [];
+  available.forEach((p) => { if (p.category && !cats.includes(p.category)) cats.push(p.category); });
+  const list = filterCat === "All" ? available : available.filter((p) => p.category === filterCat);
+
+  const del = (id) => save({ ...trip, places: (trip.places || []).filter((p) => p.id !== id) });
+  const schedule = (p, iso) => {
+    save({ ...trip, days: { ...trip.days, [iso]: [...(trip.days[iso] || []), { id: uid(), title: p.name, fromPlace: p.id }] } });
+    setPickerFor(null);
+    setActiveDay(iso);
+  };
+
+  if (available.length === 0)
+    return <Empty icon="pin" title="Every spot is scheduled" sub="They're all sitting on a day in Plans. Delete one there and it comes back here." compact />;
+
+  return (
+    <>
+      {cats.length > 1 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
+          {["All", ...cats].map((c) => {
+            const on = filterCat === c;
+            const col = c === "All" ? "var(--shout)" : (TAG_COLOR[c] || "var(--shout)");
+            const count = c === "All" ? available.length : available.filter((p) => p.category === c).length;
+            return (
+              <button key={c} onClick={() => setFilterCat(c)} className="np-mono"
+                style={{ fontSize: 12.4, fontWeight: 600, letterSpacing: ".05em", textTransform: "uppercase", padding: "7px 11px", borderRadius: 999, cursor: "pointer", border: `1px solid ${on ? col : "var(--glass-line)"}`, background: on ? col : "rgba(242,223,198,.06)", color: on ? "var(--ink)" : "var(--white)", transition: "all .15s" }}>
+                {c} {count}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {list.map((p) => {
+          const open = expanded.has(p.id);
+          const picking = pickerFor === p.id;
+          return (
+            <SwipeRow key={p.id} onDelete={() => del(p.id)} label={p.name}>
+              <div className="np-card np-pop" style={{ borderRadius: 32, padding: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div role="button" tabIndex={0} onClick={() => toggleExpanded(p.id)}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleExpanded(p.id); } }}
+                    aria-expanded={open} aria-label={`${open ? "Collapse" : "Expand"} ${p.name}`}
+                    style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, cursor: "pointer" }}>
+                    <span style={{ fontSize: 20.4, fontWeight: 700, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
+                    <Ico n="chevron" s={18} c="var(--dim)" w={2.3}
+                      style={{ flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: "transform 200ms var(--ease)" }} />
+                  </div>
+                  {open && (
+                    <button onClick={() => setPickerFor((v) => (v === p.id ? null : p.id))} aria-label={`Schedule ${p.name}`}
+                      aria-expanded={picking} style={{ ...ghost, flexShrink: 0, width: 32, height: 32, color: picking ? "var(--shout)" : "var(--dim)" }}>
+                      <Ico n="cal" s={17} c="currentColor" w={2.1} />
+                    </button>
+                  )}
+                </div>
+
+                {open && (
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 7, marginTop: 11 }}>
+                      <Pill label={p.category} color={TAG_COLOR[p.category]} />
+                      {p.near && <span className="np-mono" style={{ fontSize: 12.1, color: "var(--dim)" }}>{p.near}</span>}
+                    </div>
+                    {p.summary && <div style={{ fontSize: 14.9, color: "var(--dim)", lineHeight: 1.5, marginTop: 9 }}>{p.summary}</div>}
+                    {p.url && (
+                      <a href={p.url} target="_blank" rel="noopener noreferrer" className="np-mono" style={{ display: "flex", width: "fit-content", alignItems: "center", gap: 4, marginTop: 8, fontSize: 13.1, fontWeight: 600, color: "var(--shout)", textDecoration: "none", letterSpacing: ".03em", textTransform: "uppercase" }}>
+                        More info ↗
+                      </a>
+                    )}
+
+                    {picking && (
+                      <div style={{ marginTop: 11, borderTop: "1px solid var(--glass-line)", paddingTop: 11 }}>
+                        <div className="np-mono" style={{ fontSize: 11.9, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--dim)", marginBottom: 8 }}>Schedule for</div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                          {days.map((iso) => {
+                            const c = fmtChip(iso);
+                            return (
+                              <button key={iso} onClick={() => schedule(p, iso)} className="np-mono"
+                                style={{ fontSize: 13.1, padding: "7px 11px", borderRadius: 999, cursor: "pointer", border: "1px solid var(--glass-line)", background: "rgba(242,223,198,.06)", color: "var(--white)" }}>
+                                {c.wd} {c.mo} {c.day}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <button onClick={() => setTab("itinerary")} className="np-mono"
+                          style={{ marginTop: 9, fontSize: 12.4, color: "var(--dim)", background: "none", border: "none", padding: 0, cursor: "pointer" }}>
+                          Open Plans ↗
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </SwipeRow>
+          );
+        })}
+      </div>
+    </>
+  );
+}
 
 // ---- shared -----------------------------------------------------------------
 // Category / stage badge, shared so every card that shows one — Spots, Lineup,
