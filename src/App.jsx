@@ -62,12 +62,19 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,ui-s
    that holds the fill constant instead of letting it drift with width. The upper
    bound catches where the column stops growing at max-width, and it all sits ~5%
    short of full so a wider font substitution can't overflow the nowrap. */
+/* NEWPORT / JAZZ stack. NEWPORT is the longest line, so it sets the size: it's
+   sized to span the column, which makes the whole block fill. JAZZ is only ~49%
+   of NEWPORT's width, so rather than track it out to a freakish ~0.9em or blow it
+   up to 2x, FESTIVAL sits beside it on the baseline — which is how the poster
+   fills that line too. Affine in vw so the fill holds at every width, and held a
+   few percent short of full so a wider font can't overflow the nowrap. */
 .np-poster-word{display:block;color:var(--poster-cream);font-weight:800;
-  font-size:clamp(24px,calc(12.45vw - 4px),53px);line-height:.9;letter-spacing:-.024em;
+  font-size:clamp(34px,calc(19.42vw - 6.2px),83px);line-height:.88;letter-spacing:-.028em;
   text-transform:uppercase;white-space:nowrap;}
-.np-poster-sub{display:block;text-align:right;color:var(--poster-orange);font-weight:800;
-  font-size:clamp(12px,4.1vw,18px);letter-spacing:.30em;text-transform:uppercase;
-  margin-top:6px;padding-right:.1em;}
+.np-poster-row2{display:flex;align-items:baseline;justify-content:space-between;gap:12px;}
+.np-poster-sub{color:var(--poster-orange);font-weight:800;white-space:nowrap;
+  font-size:clamp(11px,3.4vw,16px);letter-spacing:.26em;text-transform:uppercase;
+  padding-bottom:.1em;}
 .np-poster-rule{height:1px;background:rgba(242,223,198,.18);margin:16px 0 13px;}
 .np-poster-date{color:var(--poster-cream);font-size:11px;font-weight:700;
   letter-spacing:.16em;text-transform:uppercase;}
@@ -419,8 +426,11 @@ function Header({ trip, countdown }) {
 
   return (
     <div className="np-poster" style={{ marginTop: 2 }}>
-      <span className="np-poster-word">Newport Jazz</span>
-      <span className="np-poster-sub">Festival</span>
+      <span className="np-poster-word">Newport</span>
+      <div className="np-poster-row2">
+        <span className="np-poster-word">Jazz</span>
+        <span className="np-poster-sub">Festival</span>
+      </div>
 
       <div className="np-poster-rule" />
 
