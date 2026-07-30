@@ -118,11 +118,12 @@ const PATHS = {
   locate: <><circle cx="12" cy="12" r="7" /><line x1="12" y1="2" x2="12" y2="5" /><line x1="12" y1="19" x2="12" y2="22" /><line x1="2" y1="12" x2="5" y2="12" /><line x1="19" y1="12" x2="22" y2="12" /><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" /></>,
   sun: <><circle cx="12" cy="12" r="4.2" /><path d="M12 2v2.4M12 19.6V22M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2 12h2.4M19.6 12H22M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" /></>,
   grip: <><circle cx="9" cy="6" r="1.4" fill="currentColor" stroke="none" /><circle cx="15" cy="6" r="1.4" fill="currentColor" stroke="none" /><circle cx="9" cy="12" r="1.4" fill="currentColor" stroke="none" /><circle cx="15" cy="12" r="1.4" fill="currentColor" stroke="none" /><circle cx="9" cy="18" r="1.4" fill="currentColor" stroke="none" /><circle cx="15" cy="18" r="1.4" fill="currentColor" stroke="none" /></>,
+  chevron: <polyline points="6 9 12 15 18 9" />,
 };
-function Ico({ n, s = 16, c = "currentColor", w = 2, fill = "none" }) {
+function Ico({ n, s = 16, c = "currentColor", w = 2, fill = "none", style }) {
   return (
     <svg width={s} height={s} viewBox="0 0 24 24" fill={fill} stroke={c}
-      strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={style}>
       {PATHS[n]}
     </svg>
   );
@@ -461,9 +462,15 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
   const [title, setTitle] = useState("");
   const [order, setOrder] = useState(null); // live-reordered items while a drag is in progress
   const [draggingId, setDraggingId] = useState(null);
+  const [expanded, setExpanded] = useState(() => new Set()); // ids showing their full detail
   const dragRef = useRef({ id: null, startY: 0, rowH: 70 });
   const orderRef = useRef(null); // mirrors `order`, readable outside React's render phase
   const rowRefs = useRef({});
+  const toggleExpanded = (id) => setExpanded((cur) => {
+    const next = new Set(cur);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
 
   if (!days.length)
     return <Empty icon="cal" title="No trip days" sub="The trip runs Jul 30 – Aug 2." compact />;
@@ -536,18 +543,41 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
           // the same info as its Spots card — category, summary, more-info link.
           const sourcePlace = it.fromPlace ? trip.places.find((p) => p.id === it.fromPlace) : null;
           const dragging = draggingId === it.id;
+          const hasDetail = !!(sourcePlace || it.note);
+          const open = hasDetail && expanded.has(it.id);
           return (
           <div key={it.id} ref={(el) => { rowRefs.current[it.id] = el; }}
             style={{ opacity: dragging ? .55 : 1, transition: dragging ? "none" : "opacity 160ms var(--ease)" }}>
           <SwipeRow onDelete={() => del(it.id)} label={it.title}>
           <div className="np-card np-pop" style={{ borderRadius: 32, padding: 14 }}>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 20.4, fontWeight: 700, lineHeight: 1.2 }}>{it.title}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              {hasDetail ? (
+                // Deliberately a <div>, not a <button>: SwipeRow only excludes
+                // real form controls from its swipe-start check, so this stays
+                // swipeable from anywhere on the row while a plain tap (no
+                // drag) still fires the native click below to toggle detail.
+                <div role="button" tabIndex={0} onClick={() => toggleExpanded(it.id)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleExpanded(it.id); } }}
+                  aria-expanded={open} aria-label={`${open ? "Collapse" : "Expand"} ${it.title}`}
+                  style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, cursor: "pointer" }}>
+                  <span style={{ fontSize: 20.4, fontWeight: 700, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.title}</span>
+                  <Ico n="chevron" s={18} c="var(--dim)" w={2.3}
+                    style={{ flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: "transform 200ms var(--ease)" }} />
+                </div>
+              ) : (
+                <div style={{ flex: 1, minWidth: 0, fontSize: 20.4, fontWeight: 700, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.title}</div>
+              )}
+              <button onPointerDown={(e) => dragStart(e, it)} aria-label={`Reorder ${it.title}`}
+                style={{ ...ghost, flexShrink: 0, width: 34, height: 34, color: "var(--dim)", touchAction: "none", cursor: dragging ? "grabbing" : "grab" }}>
+                <Ico n="grip" s={20} c="currentColor" w={0} />
+              </button>
+            </div>
 
+            {open && (
+              <div>
                 {sourcePlace && (
                   <>
-                    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 7, marginTop: 7 }}>
+                    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 7, marginTop: 11 }}>
                       <Pill label={sourcePlace.category} color={TAG_COLOR[sourcePlace.category]} />
                       {sourcePlace.near && <span className="np-mono" style={{ fontSize: 12.1, color: "var(--dim)" }}>{sourcePlace.near}</span>}
                     </div>
@@ -562,13 +592,9 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
 
                 {/* Seeded blocks carry their own standing detail (e.g. the fest
                     venue and end time); it's fixed copy, not an editable note. */}
-                {it.note && <div style={{ fontSize: 14.9, color: "var(--dim)", lineHeight: 1.5, marginTop: 9 }}>{it.note}</div>}
+                {it.note && <div style={{ fontSize: 14.9, color: "var(--dim)", lineHeight: 1.5, marginTop: sourcePlace ? 9 : 11 }}>{it.note}</div>}
               </div>
-              <button onPointerDown={(e) => dragStart(e, it)} aria-label={`Reorder ${it.title}`}
-                style={{ ...ghost, alignSelf: "center", flexShrink: 0, width: 34, height: 34, color: "var(--dim)", touchAction: "none", cursor: dragging ? "grabbing" : "grab" }}>
-                <Ico n="grip" s={20} c="currentColor" w={0} />
-              </button>
-            </div>
+            )}
           </div>
           </SwipeRow>
           </div>);
