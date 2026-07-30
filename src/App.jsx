@@ -19,6 +19,12 @@ const STYLE = `
   --glass:rgba(255,255,255,.08);
   --glass-line:rgba(255,255,255,.20);
   --ease:cubic-bezier(.22,1,.36,1);
+  /* Sampled from the Newport Jazz Festival poster, for the masthead */
+  --poster-navy:#0C1430;
+  --poster-cream:#F2DFC6;
+  --poster-orange:#EB5A23;
+  --poster-gold:#F0B81B;
+  --poster-blue:#1E86B5;
 }
 *{box-sizing:border-box;}
 html,body{margin:0;background:var(--void);-webkit-text-size-adjust:100%;}
@@ -39,9 +45,27 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,ui-s
 
 /* Tiny functional labels, so the hero type carries the weight */
 .np-label{font-size:10px;text-transform:uppercase;letter-spacing:.18em;font-weight:700;}
-/* The destination line — still a header, not the massive hero type, but 2x the
-   usual label size per request so it reads on its own at a glance. */
-.np-eyebrow{font-size:20px;text-transform:uppercase;letter-spacing:.03em;font-weight:800;}
+
+/* Poster masthead — the festival's own artwork treatment: cream wordmark filling
+   a deep navy field, with FESTIVAL kicked out in vermillion beneath it. */
+.np-poster{background:var(--poster-navy);border-radius:28px;padding:22px 20px 18px;
+  border:1px solid rgba(242,223,198,.14);}
+/* Spans the panel on one line like the poster. The available width is the
+   viewport minus fixed padding, so the size is affine in vw rather than a plain
+   ratio — that keeps the fill constant at every width instead of drifting. The
+   upper bound catches the point where the column stops growing at max-width, and
+   it all sits ~5% short of full so a wider font substitution can't overflow. */
+.np-poster-word{display:block;color:var(--poster-cream);font-weight:800;
+  font-size:clamp(22px,calc(12.35vw - 8.9px),47px);line-height:.9;letter-spacing:-.022em;
+  text-transform:uppercase;white-space:nowrap;}
+.np-poster-sub{display:block;text-align:right;color:var(--poster-orange);font-weight:800;
+  font-size:clamp(12px,4.1vw,18px);letter-spacing:.30em;text-transform:uppercase;
+  margin-top:6px;padding-right:.1em;}
+.np-poster-rule{height:1px;background:rgba(242,223,198,.18);margin:16px 0 13px;}
+.np-poster-date{color:var(--poster-cream);font-size:11px;font-weight:700;
+  letter-spacing:.16em;text-transform:uppercase;}
+.np-poster-year{color:var(--poster-orange);font-weight:800;font-size:23px;
+  letter-spacing:.06em;line-height:1;margin-top:3px;}
 
 .np-in{background:rgba(255,255,255,.06);border:1px solid var(--glass-line);color:var(--white);
   border-radius:999px;}
@@ -376,44 +400,37 @@ export default function App() {
 }
 
 // ---- Header ---------------------------------------------------------------
-// Display only — trip details aren't editable from the app.
+// Display only, styled after the festival poster: cream wordmark on the poster's
+// deep navy, FESTIVAL kicked out in vermillion, dates and year at the foot.
 function Header({ trip, countdown }) {
-  const range = trip.startDate && trip.endDate
-    ? `${fmtChip(trip.startDate).mo} ${fmtChip(trip.startDate).day} – ${fmtChip(trip.endDate).mo} ${fmtChip(trip.endDate).day}`
-    : "Dates not set";
+  const s = trip.startDate ? fmtChip(trip.startDate) : null;
+  const e = trip.endDate ? fmtChip(trip.endDate) : null;
+  const range = s && e ? `${s.mo} ${s.day} – ${e.mo} ${e.day}` : "Dates not set";
+  const year = trip.startDate ? trip.startDate.slice(0, 4) : "";
 
   return (
-    <div style={{ marginTop: 2 }}>
-      <span className="np-eyebrow" style={{ color: "var(--shout)" }}>{trip.destination || "Newport, RI"}</span>
+    <div className="np-poster" style={{ marginTop: 2 }}>
+      <span className="np-poster-word">Newport Jazz</span>
+      <span className="np-poster-sub">Festival</span>
 
-      <h1 style={{ fontSize: 32, fontWeight: 800, letterSpacing: "-.02em", lineHeight: 1.08, margin: "8px 0 0" }}>
-        {trip.name || "Untitled Trip"}
-      </h1>
+      <div className="np-poster-rule" />
 
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, marginTop: 16 }}>
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 14 }}>
         <div>
-          <div className="np-label" style={{ color: "var(--dim)" }}>Dates</div>
-          <div style={{ fontSize: 15, fontWeight: 700, marginTop: 4, letterSpacing: "-.01em" }}>{range}</div>
+          <div className="np-poster-date">{range}</div>
+          {year && <div className="np-poster-year">{year}</div>}
         </div>
         {countdown !== null && (
           <div style={{ textAlign: "right", flexShrink: 0 }}>
-            <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: "-.02em", color: countdown >= 0 ? "var(--shout)" : "var(--dim)" }}>
+            <div style={{ fontSize: 23, fontWeight: 800, lineHeight: 1, letterSpacing: "-.01em", color: "var(--poster-gold)" }}>
               {countdown > 0 ? countdown : countdown === 0 ? "Today" : "—"}
             </div>
-            <div className="np-label" style={{ color: "var(--dim)", marginTop: 2 }}>
+            <div className="np-poster-date" style={{ opacity: .7, marginTop: 4 }}>
               {countdown > 1 ? "days to go" : countdown === 1 ? "day to go" : countdown === 0 ? "you're off" : "in progress"}
             </div>
           </div>
         )}
       </div>
-
-      {trip.homeBase && (
-        <a href={`https://www.google.com/maps/search/?api=1&query=${enc(trip.homeBase)}`} target="_blank" rel="noopener noreferrer"
-          className="np-label"
-          style={{ display: "inline-flex", alignItems: "center", gap: 7, marginTop: 14, color: "var(--shout)", textDecoration: "none", border: "1px solid var(--glass-line)", borderRadius: 999, padding: "9px 15px", background: "var(--glass)" }}>
-          <Ico n="home" s={13} c="var(--shout)" w={2.4} />{trip.homeBase}
-        </a>
-      )}
     </div>
   );
 }
