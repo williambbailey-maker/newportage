@@ -114,7 +114,6 @@ const PATHS = {
   pencil: <path d="M17 3a2.8 2.8 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />,
   music: <><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></>,
   home: <><path d="M3 11l9-7 9 7" /><path d="M5 10v10h5v-6h4v6h5V10" /></>,
-  route: <><circle cx="6" cy="19" r="2.4" /><circle cx="18" cy="5" r="2.4" /><path d="M8.3 19H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.7" /></>,
   star: <polygon points="12 2 14.9 8.6 22 9.3 16.6 14 18.3 21 12 17.3 5.7 21 7.4 14 2 9.3 9.1 8.6" />,
   locate: <><circle cx="12" cy="12" r="7" /><line x1="12" y1="2" x2="12" y2="5" /><line x1="12" y1="19" x2="12" y2="22" /><line x1="2" y1="12" x2="5" y2="12" /><line x1="19" y1="12" x2="22" y2="12" /><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" /></>,
   sun: <><circle cx="12" cy="12" r="4.2" /><path d="M12 2v2.4M12 19.6V22M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2 12h2.4M19.6 12H22M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" /></>,
@@ -459,7 +458,6 @@ function Header({ trip, countdown }) {
 // item shows what it is, and a map button when there's somewhere to route to.
 function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
   const [title, setTitle] = useState("");
-  const [openDirId, setOpenDirId] = useState(null);
   if (!days.length)
     return <Empty icon="cal" title="No trip days" sub="The trip runs Jul 30 – Aug 2." compact />;
 
@@ -488,13 +486,12 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
       {items.length === 0
         ? <Empty icon="nav" title="Nothing planned yet" sub="Add a beach block, dinner, a drive — anything you want on this day." compact />
         : <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{items.map((it) => {
-          const dirOpen = openDirId === it.id;
           // An item added from Spots carries its source record, so it renders with
-          // the same info as its Spots card — category, summary, directions.
+          // the same info as its Spots card — category, summary, more-info link.
           const sourcePlace = it.fromPlace ? trip.places.find((p) => p.id === it.fromPlace) : null;
-          const mapTarget = sourcePlace ? `${sourcePlace.name} ${sourcePlace.near || trip.destination || ""}` : null;
           return (
-          <div key={it.id} className="np-card np-pop" style={{ borderRadius: 32, padding: 14 }}>
+          <SwipeRow key={it.id} onDelete={() => del(it.id)} label={it.title}>
+          <div className="np-card np-pop" style={{ borderRadius: 32, padding: 14 }}>
             <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 20.4, fontWeight: 700, lineHeight: 1.2 }}>{it.title}</div>
@@ -518,15 +515,9 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
                     venue and end time); it's fixed copy, not an editable note. */}
                 {it.note && <div style={{ fontSize: 14.9, color: "var(--dim)", lineHeight: 1.5, marginTop: 9 }}>{it.note}</div>}
               </div>
-              <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                {mapTarget && (
-                  <button onClick={() => setOpenDirId(dirOpen ? null : it.id)} aria-label="Directions" style={{ ...iconBtn, width: 38, height: 38, background: dirOpen ? "var(--shout)" : "rgba(242,223,198,.06)" }}><Ico n="route" s={16} c={dirOpen ? "var(--ink)" : "var(--white)"} /></button>
-                )}
-                <button onClick={() => del(it.id)} aria-label="Remove" style={ghost}><Ico n="trash" s={15} /></button>
-              </div>
             </div>
-            {dirOpen && mapTarget && <MapPanel from={trip.homeBase} to={mapTarget} />}
-          </div>);
+          </div>
+          </SwipeRow>);
         })}
         </div>}
       <div className="np-card" style={{ borderRadius: 28, padding: 10, marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
@@ -608,21 +599,22 @@ function Lineup({ trip, days, save }) {
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
             {groups[k].slice().sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99")).map((a) => (
-              <div key={a.id} className="np-card np-pop" style={{ borderRadius: 32, padding: 14 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-                  <button onClick={() => star(a.id)} aria-label="Star" style={{ ...ghost, flexShrink: 0 }}>
-                    <Ico n="star" s={20} c="var(--shout)" fill={a.starred ? "var(--shout)" : "none"} />
-                  </button>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 20.4, fontWeight: 700, lineHeight: 1.2 }}>{a.artist}</div>
-                    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 7, marginTop: 7 }}>
-                      <span className="np-mono" style={{ fontSize: 12.7, fontWeight: 600, color: a.time ? "var(--white)" : "var(--dim)" }}>{fmtSlot(a)}</span>
-                      {a.stage ? <Pill label={a.stage.replace(" Stage", "")} color={STAGE_COLOR[a.stage]} /> : <DashedPill label="Stage TBA" />}
+              <SwipeRow key={a.id} onDelete={() => del(a.id)} label={a.artist}>
+                <div className="np-card np-pop" style={{ borderRadius: 32, padding: 14 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+                    <button onClick={() => star(a.id)} aria-label="Star" style={{ ...ghost, flexShrink: 0 }}>
+                      <Ico n="star" s={20} c="var(--shout)" fill={a.starred ? "var(--shout)" : "none"} />
+                    </button>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 20.4, fontWeight: 700, lineHeight: 1.2 }}>{a.artist}</div>
+                      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 7, marginTop: 7 }}>
+                        <span className="np-mono" style={{ fontSize: 12.7, fontWeight: 600, color: a.time ? "var(--white)" : "var(--dim)" }}>{fmtSlot(a)}</span>
+                        {a.stage ? <Pill label={a.stage.replace(" Stage", "")} color={STAGE_COLOR[a.stage]} /> : <DashedPill label="Stage TBA" />}
+                      </div>
                     </div>
                   </div>
-                  <button onClick={() => del(a.id)} aria-label="Remove" style={ghost}><Ico n="trash" s={15} /></button>
                 </div>
-              </div>
+              </SwipeRow>
             ))}
           </div>
         </div>
@@ -777,8 +769,9 @@ function Places({ trip, days, save }) {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {list.map((p) => (
-          <PlaceCard key={p.id} p={p} trip={trip} days={days} dist={distOf(p.id)}
-            onDelete={() => del(p.id)} onAddToPlan={addToPlan} />
+          <SwipeRow key={p.id} onDelete={() => del(p.id)} label={p.name}>
+            <PlaceCard p={p} days={days} dist={distOf(p.id)} onAddToPlan={addToPlan} />
+          </SwipeRow>
         ))}
       </div>
 
@@ -817,14 +810,84 @@ function DashedPill({ label }) {
   );
 }
 
+// Swipe-left-to-delete, wrapping any card. Follows the iOS pattern: a short
+// swipe snaps open to reveal a Delete button you then tap (so a brush past the
+// threshold can't destroy anything), and a long swipe past halfway deletes
+// outright. Pointer events cover both touch and mouse.
+const SWIPE_REVEAL = 104;
+function SwipeRow({ children, onDelete, label = "item" }) {
+  const [dx, setDx] = useState(0);
+  const [open, setOpen] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const [going, setGoing] = useState(false);
+  // Latest offset kept in a ref too — the pointerup handler would otherwise
+  // close over a stale value from the render that registered it.
+  const st = useRef({ active: false, decided: false, x0: 0, y0: 0, w: 0, dx: 0 });
+
+  const setOffset = (v) => { st.current.dx = v; setDx(v); };
+
+  const down = (e) => {
+    // Let taps on real controls through untouched.
+    if (e.target.closest("a,button,input,select,textarea")) return;
+    const s = st.current;
+    s.active = true; s.decided = false;
+    s.x0 = e.clientX; s.y0 = e.clientY;
+    s.w = e.currentTarget.getBoundingClientRect().width;
+    setDragging(true);
+  };
+
+  const move = (e) => {
+    const s = st.current;
+    if (!s.active) return;
+    const ddx = e.clientX - s.x0, ddy = e.clientY - s.y0;
+    if (!s.decided) {
+      if (Math.abs(ddx) < 6 && Math.abs(ddy) < 6) return;
+      s.decided = true;
+      // Vertical intent wins — hand the gesture back so the page still scrolls.
+      if (Math.abs(ddy) >= Math.abs(ddx)) { s.active = false; setDragging(false); return; }
+    }
+    setOffset(Math.max(-s.w, Math.min(0, (open ? -SWIPE_REVEAL : 0) + ddx)));
+  };
+
+  const up = () => {
+    const s = st.current;
+    if (!s.active) return;
+    s.active = false; setDragging(false);
+    if (s.dx <= -s.w * 0.5) {          // committed swipe — see it leave, then drop it
+      setGoing(true); setOffset(-s.w);
+      setTimeout(onDelete, 190);
+    } else if (s.dx <= -46) {
+      setOpen(true); setOffset(-SWIPE_REVEAL);
+    } else {
+      setOpen(false); setOffset(0);
+    }
+  };
+
+  return (
+    <div style={{ position: "relative", borderRadius: 32, overflow: "hidden", touchAction: "pan-y" }}
+      onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
+      {/* Only mounted while the row is engaged. The cards are translucent glass, so
+          leaving this behind a closed row bled orange through it. */}
+      {(dx !== 0 || dragging) && (
+      <div style={{ position: "absolute", inset: 0, display: "flex", justifyContent: "flex-end", alignItems: "stretch" }}>
+        <button onClick={() => { setGoing(true); setOffset(-st.current.w || -400); setTimeout(onDelete, 190); }}
+          aria-label={`Delete ${label}`}
+          style={{ width: SWIPE_REVEAL, border: "none", background: "var(--orange)", color: "var(--ink)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5, fontWeight: 700, fontSize: 12.1, letterSpacing: ".04em" }}>
+          <Ico n="trash" s={17} c="var(--ink)" w={2.2} /> Delete
+        </button>
+      </div>
+      )}
+      <div style={{ transform: `translateX(${dx}px)`, transition: dragging ? "none" : `transform ${going ? 190 : 220}ms var(--ease)`, willChange: "transform" }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 // One saved place. Owns its own expand state so the list does not track it by id.
-function PlaceCard({ p, trip, days, dist, onDelete, onAddToPlan }) {
-  const [openDir, setOpenDir] = useState(false);
+function PlaceCard({ p, days, dist, onAddToPlan }) {
   const [openPlan, setOpenPlan] = useState(false);
   const [addedTo, setAddedTo] = useState(null);
-  // `near` lets an out-of-town place geocode against its own town rather than
-  // the trip destination.
-  const region = p.near || trip.destination || "";
 
   return (
     <div className="np-card np-pop" style={{ borderRadius: 32, padding: 14 }}>
@@ -837,15 +900,9 @@ function PlaceCard({ p, trip, days, dist, onDelete, onAddToPlan }) {
           <div style={{ fontSize: 20.4, fontWeight: 700, lineHeight: 1.2, marginTop: 7 }}>{p.name}</div>
           {p.near && <div className="np-mono" style={{ fontSize: 12.1, color: "var(--dim)", marginTop: 3 }}>{p.near}</div>}
         </div>
-        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-          <button onClick={() => { setOpenPlan((v) => !v); setAddedTo(null); }} aria-label="Add to plans" style={{ ...iconBtn, width: 38, height: 38, background: openPlan ? "var(--shout)" : "rgba(242,223,198,.06)" }}>
-            <Ico n="cal" s={16} c={openPlan ? "var(--ink)" : "var(--white)"} />
-          </button>
-          <button onClick={() => setOpenDir((v) => !v)} aria-label="Directions" style={{ ...iconBtn, width: 38, height: 38, background: openDir ? "var(--shout)" : "rgba(242,223,198,.06)" }}>
-            <Ico n="route" s={16} c={openDir ? "var(--ink)" : "var(--white)"} />
-          </button>
-          <button onClick={onDelete} aria-label="Remove" style={ghost}><Ico n="trash" s={15} /></button>
-        </div>
+        <button onClick={() => { setOpenPlan((v) => !v); setAddedTo(null); }} aria-label="Add to plans" style={{ ...iconBtn, width: 38, height: 38, flexShrink: 0, background: openPlan ? "var(--shout)" : "rgba(242,223,198,.06)" }}>
+          <Ico n="cal" s={16} c={openPlan ? "var(--ink)" : "var(--white)"} />
+        </button>
       </div>
       {p.summary && <div style={{ fontSize: 14.9, color: "var(--dim)", lineHeight: 1.5, marginTop: 9 }}>{p.summary}</div>}
       {p.url && (
@@ -872,34 +929,6 @@ function PlaceCard({ p, trip, days, dist, onDelete, onAddToPlan }) {
               Added to your Plans as an any-time item — open Plans to give it a time.
             </div>
           )}
-        </div>
-      )}
-      {openDir && <MapPanel from={trip.homeBase} to={`${p.name} ${region}`} />}
-    </div>
-  );
-}
-
-function MapPanel({ from, to }) {
-  const dest = to || "";
-  const src = from
-    ? `https://maps.google.com/maps?saddr=${enc(from)}&daddr=${enc(dest)}&output=embed`
-    : `https://maps.google.com/maps?q=${enc(dest)}&output=embed`;
-  const ext = from
-    ? `https://www.google.com/maps/dir/?api=1&origin=${enc(from)}&destination=${enc(dest)}`
-    : `https://www.google.com/maps/search/?api=1&query=${enc(dest)}`;
-  return (
-    <div className="np-pop" style={{ marginTop: 10 }}>
-      <div style={{ borderRadius: 26, overflow: "hidden", border: "1px solid var(--glass-line)", background: "rgba(242,223,198,.06)" }}>
-        <iframe title={`Map to ${dest}`} src={src} loading="lazy"
-          style={{ width: "100%", height: 190, border: 0, display: "block" }} />
-      </div>
-      <a href={ext} target="_blank" rel="noopener noreferrer" className="np-mono"
-        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, marginTop: 8, background: "var(--shout)", color: "var(--ink)", borderRadius: 999, padding: "11px 0", fontSize: 13.8, fontWeight: 600, textDecoration: "none", letterSpacing: ".01em" }}>
-        <Ico n="route" s={15} c="var(--ink)" /> Directions in Google Maps
-      </a>
-      {from && (
-        <div className="np-mono" style={{ fontSize: 11, color: "var(--dim)", textAlign: "center", marginTop: 6 }}>
-          from {from}
         </div>
       )}
     </div>
