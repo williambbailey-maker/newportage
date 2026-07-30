@@ -1,35 +1,42 @@
 import React, { useState, useEffect, useRef } from "react";
 
 // ---- styles ---------------------------------------------------------------
-// Hyper-Saturated Fluid: a dull leaf/dollar-bill green is the one "shout"
-// colour, carrying the liquid hero; everything below sits in a Deep Onyx void
-// on frosted glass. Navy is kept from the original palette as the deep accent.
-// The old sand background is gone.
+// Themed after the Newport Jazz Festival poster. Every value below is sampled
+// from the artwork: the deep navy field carries the whole app, vermillion is the
+// accent that drives interactive state, and gold / blue / cream fill in behind
+// it. Type is cream rather than pure white so it sits on the navy the way the
+// poster's lettering does.
 const STYLE = `
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 :root{
-  --shout:#7A9B5E;              /* the 60% colour: muted, flat leaf green, never gradient */
-  --void:#0A0A0A;               /* Deep Onyx */
-  --surface:#171717;            /* Charcoal */
-  --gray:#262626;               /* Deep Gray */
-  --navy:#0E3A52;               /* kept from the original identity */
-  --ink:#0A0A0A;                /* type on the shout colour */
-  --white:#FFFFFF;
-  --dim:rgba(255,255,255,.60);
-  --glass:rgba(255,255,255,.08);
-  --glass-line:rgba(255,255,255,.20);
+  /* Sampled from the poster */
+  --navy:#0C1430;               /* the field the poster sits on */
+  --cream:#F2DFC6;              /* the wordmark */
+  --orange:#EB5A23;             /* vermillion — the accent */
+  --gold:#F0B81B;
+  --blue:#1E86B5;
+
+  --shout:var(--orange);        /* drives active/interactive state */
+  --void:var(--navy);           /* page background */
+  --surface:#131C3D;            /* a step up from the field, for solid panels */
+  --ink:#0C1430;                /* type on the accent colour */
+  --white:var(--cream);         /* body type reads cream on navy, not stark white */
+  --dim:rgba(242,223,198,.58);
+  --glass:rgba(242,223,198,.07);
+  --glass-line:rgba(242,223,198,.17);
   --ease:cubic-bezier(.22,1,.36,1);
-  /* Sampled from the Newport Jazz Festival poster, for the masthead */
-  --poster-navy:#0C1430;
-  --poster-cream:#F2DFC6;
-  --poster-orange:#EB5A23;
-  --poster-gold:#F0B81B;
-  --poster-blue:#1E86B5;
+
+  /* Masthead aliases, kept so the Header reads clearly on its own terms */
+  --poster-navy:var(--navy);
+  --poster-cream:var(--cream);
+  --poster-orange:var(--orange);
+  --poster-gold:var(--gold);
+  --poster-blue:var(--blue);
 }
 *{box-sizing:border-box;}
 html,body{margin:0;background:var(--void);-webkit-text-size-adjust:100%;}
 body{font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,ui-sans-serif,sans-serif;
-  color:var(--white);-webkit-font-smoothing:antialiased;}
+  color:var(--cream);-webkit-font-smoothing:antialiased;}
 .np-mono{font-family:'Inter',ui-sans-serif,sans-serif;font-variant-numeric:tabular-nums;}
 .np-app{min-height:100vh;min-height:100dvh;background:var(--void);
   padding-top:max(14px,env(safe-area-inset-top));padding-bottom:env(safe-area-inset-bottom);}
@@ -40,23 +47,23 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,ui-s
 .np-card{background:var(--glass);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
   border:1px solid var(--glass-line);border-radius:32px;
   box-shadow:0 24px 60px -20px rgba(0,0,0,.85);}
-.np-solid{background:var(--surface);border:1px solid rgba(255,255,255,.10);border-radius:32px;}
+.np-solid{background:var(--surface);border:1px solid rgba(242,223,198,.10);border-radius:32px;}
 .np-display{font-weight:800;letter-spacing:-.035em;line-height:.94;}
 
 /* Tiny functional labels, so the hero type carries the weight */
 .np-label{font-size:10px;text-transform:uppercase;letter-spacing:.18em;font-weight:700;}
 
-/* Poster masthead — the festival's own artwork treatment: cream wordmark filling
-   a deep navy field, with FESTIVAL kicked out in vermillion beneath it. */
-.np-poster{background:var(--poster-navy);border-radius:28px;padding:22px 20px 18px;
-  border:1px solid rgba(242,223,198,.14);}
-/* Spans the panel on one line like the poster. The available width is the
-   viewport minus fixed padding, so the size is affine in vw rather than a plain
-   ratio — that keeps the fill constant at every width instead of drifting. The
-   upper bound catches the point where the column stops growing at max-width, and
-   it all sits ~5% short of full so a wider font substitution can't overflow. */
+/* Poster masthead. The page background is already the poster's navy field, so
+   this carries no panel of its own — the wordmark sits directly on it, the way
+   the artwork does. */
+.np-poster{padding:8px 2px 2px;}
+/* Spans the column on one line like the poster. Available width is the viewport
+   minus fixed padding, so the size is affine in vw rather than a plain ratio —
+   that holds the fill constant instead of letting it drift with width. The upper
+   bound catches where the column stops growing at max-width, and it all sits ~5%
+   short of full so a wider font substitution can't overflow the nowrap. */
 .np-poster-word{display:block;color:var(--poster-cream);font-weight:800;
-  font-size:clamp(22px,calc(12.35vw - 8.9px),47px);line-height:.9;letter-spacing:-.022em;
+  font-size:clamp(24px,calc(12.45vw - 4px),53px);line-height:.9;letter-spacing:-.024em;
   text-transform:uppercase;white-space:nowrap;}
 .np-poster-sub{display:block;text-align:right;color:var(--poster-orange);font-weight:800;
   font-size:clamp(12px,4.1vw,18px);letter-spacing:.30em;text-transform:uppercase;
@@ -67,13 +74,13 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,ui-s
 .np-poster-year{color:var(--poster-orange);font-weight:800;font-size:23px;
   letter-spacing:.06em;line-height:1;margin-top:3px;}
 
-.np-in{background:rgba(255,255,255,.06);border:1px solid var(--glass-line);color:var(--white);
+.np-in{background:rgba(242,223,198,.06);border:1px solid var(--glass-line);color:var(--white);
   border-radius:999px;}
-.np-in:focus{outline:none;border-color:var(--shout);background:rgba(255,255,255,.11);}
+.np-in:focus{outline:none;border-color:var(--shout);background:rgba(242,223,198,.11);}
 textarea.np-in{border-radius:22px;}
 select.np-in option{background:var(--surface);color:var(--white);}
 input[type="time"].np-in,input[type="date"].np-in{color-scheme:dark;}
-::placeholder{color:rgba(255,255,255,.42);}
+::placeholder{color:rgba(242,223,198,.42);}
 
 button{font-family:inherit;transition:transform .12s var(--ease),background .16s,color .16s,border-color .16s;}
 button:active{transform:scale(.96);}
@@ -163,13 +170,13 @@ function daysUntil(iso) {
 // remaining announced acts sit on Sunday without a time — tap the pencil to fill
 // them in once the poster drops.
 const STAGES = ["Fort Stage", "Quad Stage", "Harbor Stage", "Foundation Stage"];
-// Poster stage colours — dusty, muted versions of the poster's red/green/blue/
-// gold rather than neon, so the palette reads as calm and varied, not loud.
+// The poster works in exactly four inks, and there are exactly four stages, so
+// each stage takes one of them straight from the artwork.
 const STAGE_COLOR = {
-  "Fort Stage": "#C1697C",
-  "Quad Stage": "#5FA07E",
-  "Harbor Stage": "#5B8FBD",
-  "Foundation Stage": "#BFA35C",
+  "Fort Stage": "#EB5A23",       // vermillion
+  "Quad Stage": "#F0B81B",       // gold
+  "Harbor Stage": "#1E86B5",     // blue
+  "Foundation Stage": "#F2DFC6", // cream
 };
 const FEST_VENUE = "Fort Adams State Park";
 const SEED_VERSION = 3;
@@ -245,8 +252,10 @@ const FEST_BLOCKS = [
   { date: "2026-08-01", title: "Newport Jazz Fest", note: "Fort Adams State Park · 12:00 PM – 9:00 PM" },
 ];
 const PLACE_CATS = ["Beach", "Eat", "See", "Do", "Sail", "Historic", "Nature", "Shop", "Sweet", "Music", "Scenic"];
-// Muted, "chill" hues per category — colorful without being neon-bright.
-const TAG_COLOR = { Beach: "#5B95B0", Eat: "#C1785A", See: "#6E8FB3", Do: "#B98F5E", Sail: "#4FA093", Historic: "#B99A5B", Nature: "#7BA070", Shop: "#B0759B", Sweet: "#C17B94", Music: "#8B85BD", Scenic: "#6BA085" };
+// Eleven categories against a four-ink poster, so these fan out within the
+// artwork's temperature range — warm vermillion through gold, cool blue through
+// teal — instead of introducing hues the poster doesn't contain.
+const TAG_COLOR = { Beach: "#1E86B5", Eat: "#EB5A23", See: "#5AA8CC", Do: "#F0B81B", Sail: "#2C9AA8", Historic: "#C98F2B", Nature: "#7FA85C", Shop: "#D9795E", Sweet: "#E9A98C", Music: "#3D6FA8", Scenic: "#86C0D6" };
 const PLACES_VERSION = 3;
 
 export default function App() {
@@ -356,7 +365,7 @@ export default function App() {
     return (
       <div style={{ minHeight: "100vh", background: "#0A0A0A", display: "grid", placeItems: "center" }}>
         <style>{STYLE}</style>
-        <span className="np-label" style={{ color: "rgba(255,255,255,.5)" }}>Loading your trip…</span>
+        <span className="np-label" style={{ color: "rgba(242,223,198,.5)" }}>Loading your trip…</span>
       </div>
     );
 
@@ -371,7 +380,7 @@ export default function App() {
         <div className="np-card" style={{ display: "flex", gap: 4, padding: 5, borderRadius: 999, marginTop: 20, position: "sticky", top: 10, zIndex: 5 }}>
           {TABS.map(([id, icon, label]) => (
             <button key={id} onClick={() => setTab(id)} aria-pressed={tab === id}
-              style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "10px 0", borderRadius: 999, border: "none", cursor: "pointer", fontSize: 11.5, fontWeight: 700, letterSpacing: "-.01em", background: tab === id ? "var(--shout)" : "transparent", color: tab === id ? "var(--ink)" : "rgba(255,255,255,.55)" }}>
+              style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "10px 0", borderRadius: 999, border: "none", cursor: "pointer", fontSize: 11.5, fontWeight: 700, letterSpacing: "-.01em", background: tab === id ? "var(--shout)" : "transparent", color: tab === id ? "var(--ink)" : "rgba(242,223,198,.55)" }}>
               <Ico n={icon} s={13} w={2.4} /> {label}
             </button>
           ))}
@@ -390,7 +399,7 @@ export default function App() {
             <Ico n="pin" s={13} c="var(--shout)" w={2.4} /> Map
           </a>
         </div>
-        <div className="np-label" style={{ textAlign: "center", marginTop: 18, color: "rgba(255,255,255,.30)" }}>
+        <div className="np-label" style={{ textAlign: "center", marginTop: 18, color: "rgba(242,223,198,.30)" }}>
           Newportage · v{APP_VERSION}
         </div>
         <DataTools trip={trip} save={save} />
@@ -458,7 +467,7 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
         {days.map((iso) => {
           const c = fmtChip(iso); const on = iso === activeDay; const n = (trip.days[iso] || []).length;
           return (
-            <button key={iso} onClick={() => setActiveDay(iso)} style={{ flex: "0 0 auto", width: 56, padding: "9px 0", borderRadius: 28, cursor: "pointer", border: on ? "1px solid var(--shout)" : "1px solid var(--glass-line)", background: on ? "var(--shout)" : "rgba(255,255,255,.06)", color: on ? "var(--ink)" : "var(--white)", textAlign: "center" }}>
+            <button key={iso} onClick={() => setActiveDay(iso)} style={{ flex: "0 0 auto", width: 56, padding: "9px 0", borderRadius: 28, cursor: "pointer", border: on ? "1px solid var(--shout)" : "1px solid var(--glass-line)", background: on ? "var(--shout)" : "rgba(242,223,198,.06)", color: on ? "var(--ink)" : "var(--white)", textAlign: "center" }}>
               <div className="np-mono" style={{ fontSize: 9.5, letterSpacing: ".08em", opacity: .7, textTransform: "uppercase" }}>{c.wd}</div>
               <div style={{ fontSize: 18, fontWeight: 700, lineHeight: 1.1 }}>{c.day}</div>
               <div className="np-mono" style={{ fontSize: 9, opacity: on ? .85 : .5 }}>{n ? `${n}·plan` : "—"}</div>
@@ -501,7 +510,7 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
               </div>
               <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                 {mapTarget && (
-                  <button onClick={() => setOpenDirId(dirOpen ? null : it.id)} aria-label="Directions" style={{ ...iconBtn, width: 38, height: 38, background: dirOpen ? "var(--shout)" : "rgba(255,255,255,.06)" }}><Ico n="route" s={16} c={dirOpen ? "var(--ink)" : "var(--white)"} /></button>
+                  <button onClick={() => setOpenDirId(dirOpen ? null : it.id)} aria-label="Directions" style={{ ...iconBtn, width: 38, height: 38, background: dirOpen ? "var(--shout)" : "rgba(242,223,198,.06)" }}><Ico n="route" s={16} c={dirOpen ? "var(--ink)" : "var(--white)"} /></button>
                 )}
                 <button onClick={() => del(it.id)} aria-label="Remove" style={ghost}><Ico n="trash" s={15} /></button>
               </div>
@@ -554,7 +563,7 @@ function Lineup({ trip, days, save }) {
           <div style={{ fontSize: 19, fontWeight: 700, lineHeight: 1.1 }}>{onlyStar ? "Your must-sees" : "Who's playing"}</div>
         </div>
         <button onClick={() => setOnlyStar((v) => !v)} aria-pressed={onlyStar} className="np-mono" style={{ display: "flex", alignItems: "center", gap: 5, border: "1px solid var(--glass-line)", background: onlyStar ? "var(--shout)" : "transparent", color: onlyStar ? "var(--ink)" : "var(--dim)", borderRadius: 999, padding: "7px 11px", fontSize: 11, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
-          <Ico n="star" s={13} c={onlyStar ? "var(--ink)" : "var(--shout)"} fill={onlyStar ? "#fff" : "none"} /> {onlyStar ? "Must-see" : "All sets"}
+          <Ico n="star" s={13} c={onlyStar ? "var(--ink)" : "var(--shout)"} fill={onlyStar ? "var(--ink)" : "none"} /> {onlyStar ? "Must-see" : "All sets"}
         </button>
       </div>
 
@@ -565,7 +574,7 @@ function Lineup({ trip, days, save }) {
             const col = s === "All" ? "var(--shout)" : (STAGE_COLOR[s] || "var(--shout)");
             return (
               <button key={s} onClick={() => setStageFilter(s)} className="np-mono"
-                style={{ fontSize: 11.3, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase", padding: "7px 11px", borderRadius: 999, cursor: "pointer", border: `1px solid ${on ? col : "var(--glass-line)"}`, background: on ? col : "rgba(255,255,255,.06)", color: on ? "var(--ink)" : "var(--white)", transition: "all .15s" }}>
+                style={{ fontSize: 11.3, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase", padding: "7px 11px", borderRadius: 999, cursor: "pointer", border: `1px solid ${on ? col : "var(--glass-line)"}`, background: on ? col : "rgba(242,223,198,.06)", color: on ? "var(--ink)" : "var(--white)", transition: "all .15s" }}>
                 {s === "All" ? "All stages" : s.replace(" Stage", "")}
               </button>
             );
@@ -625,7 +634,7 @@ function Lineup({ trip, days, save }) {
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="np-in np-mono" style={{ ...inStyle, flex: 1, fontSize: 12.5 }} />
           )}
           <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="np-in np-mono" style={{ ...inStyle, width: 128, fontSize: 12.5 }} />
-          <button onClick={add} aria-label="Add act" style={addBtn}><Ico n="plus" s={18} c="#fff" /></button>
+          <button onClick={add} aria-label="Add act" style={addBtn}><Ico n="plus" s={18} c="var(--ink)" /></button>
         </div>
       </div>
     </>
@@ -719,7 +728,7 @@ function Places({ trip, days, save }) {
   return (
     <>
       <button onClick={findNearby} disabled={locating} className="np-mono"
-        style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 14, borderRadius: 26, padding: "12px 0", fontSize: 13.5, fontWeight: 600, cursor: locating ? "default" : "pointer", border: "1px solid var(--glass-line)", background: showNearby ? "var(--shout)" : "rgba(255,255,255,.06)", color: showNearby ? "var(--ink)" : "var(--white)", letterSpacing: ".01em" }}>
+        style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 14, borderRadius: 26, padding: "12px 0", fontSize: 13.5, fontWeight: 600, cursor: locating ? "default" : "pointer", border: "1px solid var(--glass-line)", background: showNearby ? "var(--shout)" : "rgba(242,223,198,.06)", color: showNearby ? "var(--ink)" : "var(--white)", letterSpacing: ".01em" }}>
         <Ico n="locate" s={15} c={showNearby ? "var(--ink)" : "var(--white)"} />
         {locating ? "Finding spots near you…" : showNearby ? "Show all spots" : "Find spots near me (within 3 mi)"}
       </button>
@@ -736,7 +745,7 @@ function Places({ trip, days, save }) {
             const count = c === "All" ? baseList.length : baseList.filter((p) => p.category === c).length;
             return (
               <button key={c} onClick={() => setFilterCat(c)} className="np-mono"
-                style={{ fontSize: 11.3, fontWeight: 600, letterSpacing: ".05em", textTransform: "uppercase", padding: "7px 11px", borderRadius: 999, cursor: "pointer", border: `1px solid ${on ? col : "var(--glass-line)"}`, background: on ? col : "rgba(255,255,255,.06)", color: on ? "var(--ink)" : "var(--white)", transition: "all .15s" }}>
+                style={{ fontSize: 11.3, fontWeight: 600, letterSpacing: ".05em", textTransform: "uppercase", padding: "7px 11px", borderRadius: 999, cursor: "pointer", border: `1px solid ${on ? col : "var(--glass-line)"}`, background: on ? col : "rgba(242,223,198,.06)", color: on ? "var(--ink)" : "var(--white)", transition: "all .15s" }}>
                 {c}{c !== "All" ? ` ${count}` : ""}
               </button>
             );
@@ -772,7 +781,7 @@ function Places({ trip, days, save }) {
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <input value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} placeholder="Place name…" className="np-in" style={{ ...inStyle, flex: 1 }} />
-            <button onClick={add} aria-label="Add place" style={addBtn}><Ico n="plus" s={18} c="#fff" /></button>
+            <button onClick={add} aria-label="Add place" style={addBtn}><Ico n="plus" s={18} c="var(--ink)" /></button>
           </div>
         </div>
       )}
@@ -819,10 +828,10 @@ function PlaceCard({ p, trip, days, dist, onDelete, onAddToPlan }) {
           {p.near && <div className="np-mono" style={{ fontSize: 11, color: "var(--dim)", marginTop: 3 }}>{p.near}</div>}
         </div>
         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-          <button onClick={() => { setOpenPlan((v) => !v); setAddedTo(null); }} aria-label="Add to plans" style={{ ...iconBtn, width: 38, height: 38, background: openPlan ? "var(--shout)" : "rgba(255,255,255,.06)" }}>
+          <button onClick={() => { setOpenPlan((v) => !v); setAddedTo(null); }} aria-label="Add to plans" style={{ ...iconBtn, width: 38, height: 38, background: openPlan ? "var(--shout)" : "rgba(242,223,198,.06)" }}>
             <Ico n="cal" s={16} c={openPlan ? "var(--ink)" : "var(--white)"} />
           </button>
-          <button onClick={() => setOpenDir((v) => !v)} aria-label="Directions" style={{ ...iconBtn, width: 38, height: 38, background: openDir ? "var(--shout)" : "rgba(255,255,255,.06)" }}>
+          <button onClick={() => setOpenDir((v) => !v)} aria-label="Directions" style={{ ...iconBtn, width: 38, height: 38, background: openDir ? "var(--shout)" : "rgba(242,223,198,.06)" }}>
             <Ico n="route" s={16} c={openDir ? "var(--ink)" : "var(--white)"} />
           </button>
           <button onClick={onDelete} aria-label="Remove" style={ghost}><Ico n="trash" s={15} /></button>
@@ -842,7 +851,7 @@ function PlaceCard({ p, trip, days, dist, onDelete, onAddToPlan }) {
               const ch = fmtChip(iso);
               const on = addedTo === iso;
               return (
-                <button key={iso} onClick={() => { onAddToPlan(p, iso); setAddedTo(iso); }} className="np-mono" style={{ fontSize: 11.9, padding: "7px 11px", borderRadius: 999, cursor: "pointer", border: "1px solid var(--glass-line)", background: on ? "var(--shout)" : "rgba(255,255,255,.06)", color: on ? "var(--ink)" : "var(--white)" }}>
+                <button key={iso} onClick={() => { onAddToPlan(p, iso); setAddedTo(iso); }} className="np-mono" style={{ fontSize: 11.9, padding: "7px 11px", borderRadius: 999, cursor: "pointer", border: "1px solid var(--glass-line)", background: on ? "var(--shout)" : "rgba(242,223,198,.06)", color: on ? "var(--ink)" : "var(--white)" }}>
                   {ch.wd} {ch.mo} {ch.day}
                 </button>
               );
@@ -870,13 +879,13 @@ function MapPanel({ from, to }) {
     : `https://www.google.com/maps/search/?api=1&query=${enc(dest)}`;
   return (
     <div className="np-pop" style={{ marginTop: 10 }}>
-      <div style={{ borderRadius: 26, overflow: "hidden", border: "1px solid var(--glass-line)", background: "rgba(255,255,255,.06)" }}>
+      <div style={{ borderRadius: 26, overflow: "hidden", border: "1px solid var(--glass-line)", background: "rgba(242,223,198,.06)" }}>
         <iframe title={`Map to ${dest}`} src={src} loading="lazy"
           style={{ width: "100%", height: 190, border: 0, display: "block" }} />
       </div>
       <a href={ext} target="_blank" rel="noopener noreferrer" className="np-mono"
-        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, marginTop: 8, background: "var(--shout)", color: "#fff", borderRadius: 999, padding: "11px 0", fontSize: 12.5, fontWeight: 600, textDecoration: "none", letterSpacing: ".01em" }}>
-        <Ico n="route" s={15} c="#fff" /> Directions in Google Maps
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, marginTop: 8, background: "var(--shout)", color: "var(--ink)", borderRadius: 999, padding: "11px 0", fontSize: 12.5, fontWeight: 600, textDecoration: "none", letterSpacing: ".01em" }}>
+        <Ico n="route" s={15} c="var(--ink)" /> Directions in Google Maps
       </a>
       {from && (
         <div className="np-mono" style={{ fontSize: 10, color: "var(--dim)", textAlign: "center", marginTop: 6 }}>
@@ -920,7 +929,7 @@ function DataTools({ trip, save }) {
       </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <button onClick={copy} className="np-mono" style={{ flex: 1, minWidth: 130, background: "var(--shout)", color: "var(--ink)", border: "none", borderRadius: 999, padding: "10px 12px", fontSize: 11.5, fontWeight: 600, cursor: "pointer" }}>Copy backup</button>
-        <button onClick={restore} disabled={!text.trim()} className="np-mono" style={{ flex: 1, minWidth: 130, background: text.trim() ? "var(--shout)" : "rgba(255,255,255,.06)", color: text.trim() ? "#fff" : "var(--dim)", border: "none", borderRadius: 999, padding: "10px 12px", fontSize: 11.5, fontWeight: 600, cursor: text.trim() ? "pointer" : "default" }}>Restore from text</button>
+        <button onClick={restore} disabled={!text.trim()} className="np-mono" style={{ flex: 1, minWidth: 130, background: text.trim() ? "var(--shout)" : "rgba(242,223,198,.06)", color: text.trim() ? "var(--ink)" : "var(--dim)", border: "none", borderRadius: 999, padding: "10px 12px", fontSize: 11.5, fontWeight: 600, cursor: text.trim() ? "pointer" : "default" }}>Restore from text</button>
       </div>
       {msg && <div className="np-mono" style={{ fontSize: 11, color: "var(--shout)", marginTop: 10, lineHeight: 1.4 }}>{msg}</div>}
       <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Paste a backup here to restore it…" rows={3} className="np-in np-mono" style={{ ...inStyle, marginTop: 10, resize: "vertical", fontSize: 11, lineHeight: 1.4, minHeight: 58, width: "100%", boxSizing: "border-box" }} />
@@ -951,6 +960,6 @@ function Empty({ icon, title, sub, action, onAction, compact }) {
 // Shared control styling. Pills everywhere — no mid-size radii anywhere in the UI.
 const inStyle = { width: "100%", padding: "13px 17px", fontSize: 14.5, border: "none" };
 const addBtn = { width: 46, height: 46, flexShrink: 0, borderRadius: 999, border: "none", background: "var(--shout)", color: "var(--ink)", display: "grid", placeItems: "center", cursor: "pointer" };
-const iconBtn = { width: 40, height: 40, flexShrink: 0, borderRadius: 999, border: "1px solid var(--glass-line)", background: "rgba(255,255,255,.06)", display: "grid", placeItems: "center", cursor: "pointer" };
-const ghost = { background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,.42)", padding: 0, display: "grid", placeItems: "center" };
+const iconBtn = { width: 40, height: 40, flexShrink: 0, borderRadius: 999, border: "1px solid var(--glass-line)", background: "rgba(242,223,198,.06)", display: "grid", placeItems: "center", cursor: "pointer" };
+const ghost = { background: "none", border: "none", cursor: "pointer", color: "rgba(242,223,198,.42)", padding: 0, display: "grid", placeItems: "center" };
 const primaryBtn = { marginTop: 4, background: "var(--shout)", color: "var(--ink)", border: "none", borderRadius: 999, padding: "14px 0", fontWeight: 700, fontSize: 12.5, cursor: "pointer", letterSpacing: ".01em" };
