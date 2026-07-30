@@ -117,7 +117,6 @@ const PATHS = {
   star: <polygon points="12 2 14.9 8.6 22 9.3 16.6 14 18.3 21 12 17.3 5.7 21 7.4 14 2 9.3 9.1 8.6" />,
   locate: <><circle cx="12" cy="12" r="7" /><line x1="12" y1="2" x2="12" y2="5" /><line x1="12" y1="19" x2="12" y2="22" /><line x1="2" y1="12" x2="5" y2="12" /><line x1="19" y1="12" x2="22" y2="12" /><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" /></>,
   sun: <><circle cx="12" cy="12" r="4.2" /><path d="M12 2v2.4M12 19.6V22M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2 12h2.4M19.6 12H22M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" /></>,
-  chevron: <polyline points="6 9 12 15 18 9" />,
   gear: <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" /></>,
 };
 function Ico({ n, s = 16, c = "currentColor", w = 2, fill = "none", style }) {
@@ -645,29 +644,32 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
           const hasDetail = !!(sourcePlace || it.note);
           const open = expanded.has(it.id);
           const menuOpen = menuFor === it.id;
+          const blurb = (sourcePlace && sourcePlace.summary) || it.note || "";
           return (
           <SwipeRow key={it.id} onDelete={() => del(it.id)} label={it.title}>
-          <div className="np-card np-pop" style={{ borderRadius: 32, padding: 14 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              {/* Deliberately a <div>, not a <button>: SwipeRow only excludes
-                  real form controls from its swipe-start check, so this stays
-                  swipeable from anywhere on the row while a plain tap (no
-                  drag) still fires the native click below to toggle detail. */}
-              <div role="button" tabIndex={0} onClick={() => toggleExpanded(it.id)}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleExpanded(it.id); } }}
-                aria-expanded={open} aria-label={`${open ? "Collapse" : "Expand"} ${it.title}`}
-                style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, cursor: "pointer" }}>
-                <span style={{ fontSize: 20.4, fontWeight: 700, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.title}</span>
-                <Ico n="chevron" s={18} c="var(--dim)" w={2.3}
-                  style={{ flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: "transform 200ms var(--ease)" }} />
-              </div>
+          {/* The whole card is the toggle. Deliberately a <div>, not a <button>:
+              SwipeRow only excludes real form controls from its swipe-start
+              check, so this stays swipeable from anywhere while a plain tap
+              (no drag) still fires the click. Controls inside stop propagation
+              so they don't collapse the card out from under themselves. */}
+          <div className="np-card np-pop" role="button" tabIndex={0}
+            onClick={() => toggleExpanded(it.id)}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleExpanded(it.id); } }}
+            aria-expanded={open} aria-label={`${open ? "Collapse" : "Expand"} ${it.title}`}
+            style={{ borderRadius: 32, padding: 14, cursor: "pointer", height: open ? "auto" : CARD_COLLAPSED_H, overflow: "hidden" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+              <div style={{ flex: 1, minWidth: 0, fontSize: 20.4, fontWeight: 700, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.title}</div>
               {open && (
-                <button onClick={() => setMenuFor((m) => (m === it.id ? null : it.id))} aria-label="Reschedule or delete"
+                <button onClick={(e) => { e.stopPropagation(); setMenuFor((m) => (m === it.id ? null : it.id)); }} aria-label="Reschedule or delete"
                   aria-expanded={menuOpen} style={{ ...ghost, flexShrink: 0, width: 32, height: 32, color: menuOpen ? "var(--shout)" : "var(--dim)" }}>
                   <Ico n="gear" s={18} c="currentColor" w={1.9} />
                 </button>
               )}
             </div>
+
+            {!open && blurb && (
+              <div style={{ ...clamp2, fontSize: 14.9, color: "var(--dim)", lineHeight: 1.5, marginTop: 8 }}>{blurb}</div>
+            )}
 
             {open && (
               <div>
@@ -679,7 +681,7 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
                     </div>
                     {sourcePlace.summary && <div style={{ fontSize: 14.9, color: "var(--dim)", lineHeight: 1.5, marginTop: 9 }}>{sourcePlace.summary}</div>}
                     {sourcePlace.url && (
-                      <a href={sourcePlace.url} target="_blank" rel="noopener noreferrer" className="np-mono" style={{ display: "flex", width: "fit-content", alignItems: "center", gap: 4, marginTop: 8, fontSize: 13.1, fontWeight: 600, color: "var(--shout)", textDecoration: "none", letterSpacing: ".03em", textTransform: "uppercase" }}>
+                      <a href={sourcePlace.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="np-mono" style={{ display: "flex", width: "fit-content", alignItems: "center", gap: 4, marginTop: 8, fontSize: 13.1, fontWeight: 600, color: "var(--shout)", textDecoration: "none", letterSpacing: ".03em", textTransform: "uppercase" }}>
                         More info ↗
                       </a>
                     )}
@@ -697,14 +699,14 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
                       {days.map((iso) => {
                         const c = fmtChip(iso); const on = iso === activeDay;
                         return (
-                          <button key={iso} disabled={on} onClick={() => moveTo(it, iso)} className="np-mono"
+                          <button key={iso} disabled={on} onClick={(e) => { e.stopPropagation(); moveTo(it, iso); }} className="np-mono"
                             style={{ fontSize: 13.1, padding: "7px 11px", borderRadius: 999, cursor: on ? "default" : "pointer", border: "1px solid var(--glass-line)", background: on ? "var(--shout)" : "rgba(242,223,198,.06)", color: on ? "var(--ink)" : "var(--white)", opacity: on ? .55 : 1 }}>
                             {c.wd} {c.mo} {c.day}
                           </button>
                         );
                       })}
                     </div>
-                    <button onClick={() => del(it.id)} className="np-mono"
+                    <button onClick={(e) => { e.stopPropagation(); del(it.id); }} className="np-mono"
                       style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, fontSize: 13.1, fontWeight: 600, color: "var(--orange)", background: "none", border: "none", padding: 0, cursor: "pointer" }}>
                       <Ico n="trash" s={14} c="var(--orange)" w={2.2} /> Delete
                     </button>
@@ -871,23 +873,24 @@ function Places({ trip, days, save, setTab, setActiveDay }) {
           const picking = pickerFor === p.id;
           return (
             <SwipeRow key={p.id} onDelete={() => del(p.id)} label={p.name}>
-              <div className="np-card np-pop" style={{ borderRadius: 32, padding: 14 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div role="button" tabIndex={0} onClick={() => toggleExpanded(p.id)}
-                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleExpanded(p.id); } }}
-                    aria-expanded={open} aria-label={`${open ? "Collapse" : "Expand"} ${p.name}`}
-                    style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, cursor: "pointer" }}>
-                    <span style={{ fontSize: 20.4, fontWeight: 700, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
-                    <Ico n="chevron" s={18} c="var(--dim)" w={2.3}
-                      style={{ flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: "transform 200ms var(--ease)" }} />
-                  </div>
+              <div className="np-card np-pop" role="button" tabIndex={0}
+                onClick={() => toggleExpanded(p.id)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleExpanded(p.id); } }}
+                aria-expanded={open} aria-label={`${open ? "Collapse" : "Expand"} ${p.name}`}
+                style={{ borderRadius: 32, padding: 14, cursor: "pointer", height: open ? "auto" : CARD_COLLAPSED_H, overflow: "hidden" }}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                  <div style={{ flex: 1, minWidth: 0, fontSize: 20.4, fontWeight: 700, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</div>
                   {open && (
-                    <button onClick={() => setPickerFor((v) => (v === p.id ? null : p.id))} aria-label={`Schedule ${p.name}`}
+                    <button onClick={(e) => { e.stopPropagation(); setPickerFor((v) => (v === p.id ? null : p.id)); }} aria-label={`Schedule ${p.name}`}
                       aria-expanded={picking} style={{ ...ghost, flexShrink: 0, width: 32, height: 32, color: picking ? "var(--shout)" : "var(--dim)" }}>
                       <Ico n="cal" s={17} c="currentColor" w={2.1} />
                     </button>
                   )}
                 </div>
+
+                {!open && p.summary && (
+                  <div style={{ ...clamp2, fontSize: 14.9, color: "var(--dim)", lineHeight: 1.5, marginTop: 8 }}>{p.summary}</div>
+                )}
 
                 {open && (
                   <div>
@@ -897,7 +900,7 @@ function Places({ trip, days, save, setTab, setActiveDay }) {
                     </div>
                     {p.summary && <div style={{ fontSize: 14.9, color: "var(--dim)", lineHeight: 1.5, marginTop: 9 }}>{p.summary}</div>}
                     {p.url && (
-                      <a href={p.url} target="_blank" rel="noopener noreferrer" className="np-mono" style={{ display: "flex", width: "fit-content", alignItems: "center", gap: 4, marginTop: 8, fontSize: 13.1, fontWeight: 600, color: "var(--shout)", textDecoration: "none", letterSpacing: ".03em", textTransform: "uppercase" }}>
+                      <a href={p.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="np-mono" style={{ display: "flex", width: "fit-content", alignItems: "center", gap: 4, marginTop: 8, fontSize: 13.1, fontWeight: 600, color: "var(--shout)", textDecoration: "none", letterSpacing: ".03em", textTransform: "uppercase" }}>
                         More info ↗
                       </a>
                     )}
@@ -909,14 +912,14 @@ function Places({ trip, days, save, setTab, setActiveDay }) {
                           {days.map((iso) => {
                             const c = fmtChip(iso);
                             return (
-                              <button key={iso} onClick={() => schedule(p, iso)} className="np-mono"
+                              <button key={iso} onClick={(e) => { e.stopPropagation(); schedule(p, iso); }} className="np-mono"
                                 style={{ fontSize: 13.1, padding: "7px 11px", borderRadius: 999, cursor: "pointer", border: "1px solid var(--glass-line)", background: "rgba(242,223,198,.06)", color: "var(--white)" }}>
                                 {c.wd} {c.mo} {c.day}
                               </button>
                             );
                           })}
                         </div>
-                        <button onClick={() => setTab("itinerary")} className="np-mono"
+                        <button onClick={(e) => { e.stopPropagation(); setTab("itinerary"); }} className="np-mono"
                           style={{ marginTop: 9, fontSize: 12.4, color: "var(--dim)", background: "none", border: "none", padding: 0, cursor: "pointer" }}>
                           Open Plans ↗
                         </button>
@@ -1090,4 +1093,8 @@ function Empty({ icon, title, sub, action, onAction, compact }) {
 const inStyle = { width: "100%", padding: "13px 17px", fontSize: 16, border: "none" };
 const addBtn = { width: 46, height: 46, flexShrink: 0, borderRadius: 999, border: "none", background: "var(--shout)", color: "var(--ink)", display: "grid", placeItems: "center", cursor: "pointer" };
 const ghost = { background: "none", border: "none", cursor: "pointer", color: "rgba(242,223,198,.42)", padding: 0, display: "grid", placeItems: "center" };
+// Closed cards stand 1.75× the old title-only row (64px), which leaves room for
+// the title plus a two-line taste of the blurb. Tapping the card opens it.
+const CARD_COLLAPSED_H = 112;
+const clamp2 = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" };
 const primaryBtn = { marginTop: 4, background: "var(--shout)", color: "var(--ink)", border: "none", borderRadius: 999, padding: "14px 0", fontWeight: 700, fontSize: 13.8, cursor: "pointer", letterSpacing: ".01em" };
