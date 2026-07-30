@@ -117,7 +117,6 @@ const PATHS = {
   star: <polygon points="12 2 14.9 8.6 22 9.3 16.6 14 18.3 21 12 17.3 5.7 21 7.4 14 2 9.3 9.1 8.6" />,
   locate: <><circle cx="12" cy="12" r="7" /><line x1="12" y1="2" x2="12" y2="5" /><line x1="12" y1="19" x2="12" y2="22" /><line x1="2" y1="12" x2="5" y2="12" /><line x1="19" y1="12" x2="22" y2="12" /><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" /></>,
   sun: <><circle cx="12" cy="12" r="4.2" /><path d="M12 2v2.4M12 19.6V22M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2 12h2.4M19.6 12H22M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" /></>,
-  grip: <><circle cx="9" cy="6" r="1.4" fill="currentColor" stroke="none" /><circle cx="15" cy="6" r="1.4" fill="currentColor" stroke="none" /><circle cx="9" cy="12" r="1.4" fill="currentColor" stroke="none" /><circle cx="15" cy="12" r="1.4" fill="currentColor" stroke="none" /><circle cx="9" cy="18" r="1.4" fill="currentColor" stroke="none" /><circle cx="15" cy="18" r="1.4" fill="currentColor" stroke="none" /></>,
   chevron: <polyline points="6 9 12 15 18 9" />,
 };
 function Ico({ n, s = 16, c = "currentColor", w = 2, fill = "none", style }) {
@@ -250,6 +249,7 @@ const DEFAULT = {
   homeBase: "",
   startDate: "2026-07-30", endDate: "2026-08-02",
   days: {}, places: [], lineup: [], seededLineup: false, lineupVersion: 0, datesVersion: 0, plansVersion: 0,
+  plansAddsApplied: [],
 };
 // Plans stays free of individual sets — Lineup is the record of who's playing
 // when. Instead, each festival day gets one standing block. Plans items carry
@@ -259,7 +259,25 @@ const FEST_BLOCKS = [
   { date: "2026-07-31", title: "Newport Jazz Fest", note: "Fort Adams State Park · 12:00 PM – 9:00 PM" },
   { date: "2026-08-01", title: "Newport Jazz Fest", note: "Fort Adams State Park · 12:00 PM – 9:00 PM" },
 ];
-const PLACE_CATS = ["Beach", "Eat", "See", "Do", "Sail", "Historic", "Nature", "Shop", "Sweet", "Music", "Scenic"];
+// There's no Spots tab anymore — specific items get added here by request,
+// each with its own stable id so a migration only ever applies it once. If
+// the user deletes the resulting Plans item later, it stays gone; it won't
+// come back just because a later entry gets appended to this list.
+const PLANS_ADDS = [
+  {
+    id: "black-pearl-2026-07-30",
+    date: "2026-07-30",
+    place: {
+      id: "place-black-pearl",
+      category: "Eat",
+      name: "Black Pearl",
+      near: "30 Bannister's Wharf, Newport",
+      summary: "A Newport waterfront institution since 1973 — clam chowder and New England seafood in the casual Tavern or the al fresco Waterside Patio, right on Bannister's Wharf.",
+      url: "https://www.opentable.com/r/black-pearl-newport",
+    },
+  },
+];
+// Categories a Plans item can carry when it's sourced from a saved spot.
 // Eleven categories against a four-ink poster, so these fan out within the
 // artwork's temperature range — warm vermillion through gold, cool blue through
 // teal — instead of introducing hues the poster doesn't contain.
@@ -343,6 +361,21 @@ export default function App() {
       t = { ...t, days: daysObj, plansVersion: PLANS_VERSION };
       mutated = true;
     }
+    {
+      const applied = new Set(t.plansAddsApplied || []);
+      const toApply = PLANS_ADDS.filter((a) => !applied.has(a.id));
+      if (toApply.length) {
+        const daysObj = { ...t.days };
+        const newPlaces = [];
+        toApply.forEach((a) => {
+          daysObj[a.date] = [...(daysObj[a.date] || []), { id: uid(), title: a.place.name, fromPlace: a.place.id }];
+          newPlaces.push(a.place);
+          applied.add(a.id);
+        });
+        t = { ...t, places: [...t.places, ...newPlaces], days: daysObj, plansAddsApplied: [...applied] };
+        mutated = true;
+      }
+    }
     if (mutated) {
       try {
         if (typeof window !== "undefined" && window.localStorage)
@@ -377,7 +410,7 @@ export default function App() {
       </div>
     );
 
-  const TABS = [["itinerary", "cal", "Plans"], ["lineup", "music", "Lineup"], ["places", "pin", "Spots"]];
+  const TABS = [["itinerary", "cal", "Plans"], ["lineup", "music", "Lineup"]];
 
   return (
     <div className="np-app">
@@ -396,8 +429,7 @@ export default function App() {
 
         <div style={{ marginTop: 20 }} key={tab} className="np-pop">
           {tab === "itinerary" && <Itinerary trip={trip} days={days} activeDay={activeDay} setActiveDay={setActiveDay} save={save} />}
-          {tab === "lineup" && <Lineup trip={trip} days={days} save={save} />}
-          {tab === "places" && <Places trip={trip} days={days} save={save} />}
+          {tab === "lineup" && <Lineup trip={trip} save={save} />}
         </div>
 
         <div style={{ textAlign: "center", marginTop: 30 }}>
@@ -460,12 +492,7 @@ function Header({ trip, countdown }) {
 // item shows what it is, and a map button when there's somewhere to route to.
 function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
   const [title, setTitle] = useState("");
-  const [order, setOrder] = useState(null); // live-reordered items while a drag is in progress
-  const [draggingId, setDraggingId] = useState(null);
   const [expanded, setExpanded] = useState(() => new Set()); // ids showing their full detail
-  const dragRef = useRef({ id: null, startY: 0, rowH: 70 });
-  const orderRef = useRef(null); // mirrors `order`, readable outside React's render phase
-  const rowRefs = useRef({});
   const toggleExpanded = (id) => setExpanded((cur) => {
     const next = new Set(cur);
     next.has(id) ? next.delete(id) : next.add(id);
@@ -475,52 +502,13 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
   if (!days.length)
     return <Empty icon="cal" title="No trip days" sub="The trip runs Jul 30 – Aug 2." compact />;
 
-  const stored = trip.days[activeDay] || [];
-  const items = order || stored;
+  const items = trip.days[activeDay] || [];
   const add = () => {
     if (!title.trim()) return;
-    save({ ...trip, days: { ...trip.days, [activeDay]: [...stored, { id: uid(), title: title.trim() }] } });
+    save({ ...trip, days: { ...trip.days, [activeDay]: [...items, { id: uid(), title: title.trim() }] } });
     setTitle("");
   };
-  const del = (id) => save({ ...trip, days: { ...trip.days, [activeDay]: stored.filter((i) => i.id !== id) } });
-
-  const dragMove = (e) => {
-    const d = dragRef.current;
-    if (!d.id) return;
-    const delta = e.clientY - d.startY;
-    const steps = Math.trunc(delta / d.rowH);
-    if (steps !== 0) {
-      const arr = [...(orderRef.current || stored)];
-      const from = arr.findIndex((i) => i.id === d.id);
-      const to = Math.max(0, Math.min(arr.length - 1, from + steps));
-      if (to !== from) { const [moved] = arr.splice(from, 1); arr.splice(to, 0, moved); }
-      orderRef.current = arr;
-      setOrder(arr);
-      d.startY += steps * d.rowH;
-    }
-  };
-  const dragEnd = () => {
-    const d = dragRef.current;
-    if (!d.id) return;
-    d.id = null;
-    window.removeEventListener("pointermove", dragMove);
-    window.removeEventListener("pointerup", dragEnd);
-    setDraggingId(null);
-    setOrder(null);
-    const finalOrder = orderRef.current;
-    orderRef.current = null;
-    if (finalOrder) save({ ...trip, days: { ...trip.days, [activeDay]: finalOrder } });
-  };
-  const dragStart = (e, it) => {
-    e.preventDefault();
-    const row = rowRefs.current[it.id];
-    dragRef.current = { id: it.id, startY: e.clientY, rowH: (row ? row.offsetHeight : 60) + 10 };
-    orderRef.current = stored;
-    setOrder(stored);
-    setDraggingId(it.id);
-    window.addEventListener("pointermove", dragMove);
-    window.addEventListener("pointerup", dragEnd);
-  };
+  const del = (id) => save({ ...trip, days: { ...trip.days, [activeDay]: items.filter((i) => i.id !== id) } });
 
   return (
     <>
@@ -542,13 +530,10 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
           // An item added from Spots carries its source record, so it renders with
           // the same info as its Spots card — category, summary, more-info link.
           const sourcePlace = it.fromPlace ? trip.places.find((p) => p.id === it.fromPlace) : null;
-          const dragging = draggingId === it.id;
           const hasDetail = !!(sourcePlace || it.note);
           const open = hasDetail && expanded.has(it.id);
           return (
-          <div key={it.id} ref={(el) => { rowRefs.current[it.id] = el; }}
-            style={{ opacity: dragging ? .55 : 1, transition: dragging ? "none" : "opacity 160ms var(--ease)" }}>
-          <SwipeRow onDelete={() => del(it.id)} label={it.title}>
+          <SwipeRow key={it.id} onDelete={() => del(it.id)} label={it.title}>
           <div className="np-card np-pop" style={{ borderRadius: 32, padding: 14 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               {hasDetail ? (
@@ -567,10 +552,6 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
               ) : (
                 <div style={{ flex: 1, minWidth: 0, fontSize: 20.4, fontWeight: 700, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.title}</div>
               )}
-              <button onPointerDown={(e) => dragStart(e, it)} aria-label={`Reorder ${it.title}`}
-                style={{ ...ghost, flexShrink: 0, width: 34, height: 34, color: "var(--dim)", touchAction: "none", cursor: dragging ? "grabbing" : "grab" }}>
-                <Ico n="grip" s={20} c="currentColor" w={0} />
-              </button>
             </div>
 
             {open && (
@@ -596,8 +577,7 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
               </div>
             )}
           </div>
-          </SwipeRow>
-          </div>);
+          </SwipeRow>);
         })}
         </div>}
       <div className="np-card" style={{ borderRadius: 28, padding: 10, marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
@@ -609,20 +589,11 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
 }
 
 // ---- Lineup (Who's playing) ------------------------------------------------
-function Lineup({ trip, days, save }) {
-  const [artist, setArtist] = useState("");
-  const [stage, setStage] = useState(STAGES[0]);
-  const [date, setDate] = useState(days[0] || "");
-  const [time, setTime] = useState("20:00");
+function Lineup({ trip, save }) {
   // Opens on your must-sees; the pill (or the empty-state button) flips to the full schedule.
   const [onlyStar, setOnlyStar] = useState(true);
   const [stageFilter, setStageFilter] = useState("All");
 
-  const add = () => {
-    if (!artist.trim()) return;
-    save({ ...trip, lineup: [...trip.lineup, { id: uid(), artist: artist.trim(), stage, venue: FEST_VENUE, date, time, endTime: "", starred: false }] });
-    setArtist("");
-  };
   // Starring only flags the act itself — Lineup is the record of sets, Plans
   // stays free of individual set entries.
   const star = (id) => {
@@ -699,178 +670,10 @@ function Lineup({ trip, days, save }) {
           </div>
         </div>
       ))}
-
-      <div className="np-card" style={{ borderRadius: 28, padding: 12, marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
-        <input value={artist} onChange={(e) => setArtist(e.target.value)} placeholder="Artist / act" className="np-in" style={inStyle} />
-        <select value={stage} onChange={(e) => setStage(e.target.value)} className="np-in np-mono" style={{ ...inStyle, fontSize: 13.8 }}>
-          <option value="">Stage TBA</option>
-          {STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
-        <div style={{ display: "flex", gap: 8 }}>
-          {days.length ? (
-            <select value={date} onChange={(e) => setDate(e.target.value)} className="np-in np-mono" style={{ ...inStyle, flex: 1, fontSize: 13.8 }}>
-              <option value="">No date</option>
-              {days.map((d) => <option key={d} value={d}>{`${fmtChip(d).wd} ${fmtChip(d).mo} ${fmtChip(d).day}`}</option>)}
-            </select>
-          ) : (
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="np-in np-mono" style={{ ...inStyle, flex: 1, fontSize: 13.8 }} />
-          )}
-          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="np-in np-mono" style={{ ...inStyle, width: 128, fontSize: 13.8 }} />
-          <button onClick={add} aria-label="Add act" style={addBtn}><Ico n="plus" s={18} c="var(--ink)" /></button>
-        </div>
-      </div>
     </>
   );
 }
 
-// ---- Places (Spots) --------------------------------------------------------
-function Places({ trip, days, save }) {
-  const [cat, setCat] = useState(PLACE_CATS[0]);
-  const [name, setName] = useState("");
-  const [nearby, setNearby] = useState(null);   // null = show all; array = within radius
-  const [locating, setLocating] = useState(false);
-  const [locErr, setLocErr] = useState("");
-  const [filterCat, setFilterCat] = useState("All");
-
-  const add = () => {
-    if (!name.trim()) return;
-    save({ ...trip, places: [...trip.places, { id: uid(), category: cat, name: name.trim() }] });
-    setName("");
-  };
-  const del = (id) => save({ ...trip, places: trip.places.filter((p) => p.id !== id) });
-  // fromPlace lets the Plans card render the full spot info — category, summary,
-  // directions — instead of just a bare title.
-  const addToPlan = (p, iso) => {
-    const item = { id: uid(), time: "", title: p.name, fromPlace: p.id };
-    save({ ...trip, days: { ...trip.days, [iso]: [...(trip.days[iso] || []), item] } });
-  };
-
-  const RADIUS_MI = 3;
-  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  function distMiles(a, b) {
-    const R = 3958.8, rad = Math.PI / 180;
-    const dLat = (b.lat - a.lat) * rad, dLng = (b.lng - a.lng) * rad;
-    const x = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLng / 2) ** 2;
-    return 2 * R * Math.asin(Math.sqrt(x));
-  }
-  async function geocode(q) {
-    try {
-      const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${enc(q)}`, { headers: { Accept: "application/json" } });
-      const j = await r.json();
-      if (j && j[0]) return { lat: +j[0].lat, lng: +j[0].lon };
-    } catch (e) { /* network/sandbox */ }
-    return null;
-  }
-
-  const findNearby = async () => {
-    if (nearby) { setNearby(null); setLocErr(""); return; }
-    setLocErr(""); setLocating(true);
-    try {
-      if (typeof navigator === "undefined" || !navigator.geolocation) throw new Error("no-geo");
-      const pos = await new Promise((res, rej) =>
-        navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }));
-      const me = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-
-      let places2 = trip.places;
-      const need = places2.filter((p) => p.lat == null || p.lng == null);
-      if (need.length) {
-        const coords = {};
-        for (const p of need) {
-          const c = await geocode(`${p.name} ${trip.destination || ""}`);
-          if (c) coords[p.id] = c;
-          await sleep(1100); // respect Nominatim's 1 req/sec policy
-        }
-        if (Object.keys(coords).length) {
-          places2 = places2.map((p) => coords[p.id] ? { ...p, ...coords[p.id] } : p);
-          save({ ...trip, places: places2 });
-        }
-      }
-      const ranked = places2
-        .filter((p) => p.lat != null && p.lng != null)
-        .map((p) => ({ place: p, distMi: distMiles(me, { lat: p.lat, lng: p.lng }) }))
-        .filter((x) => x.distMi <= RADIUS_MI)
-        .sort((a, b) => a.distMi - b.distMi);
-      setNearby(ranked);
-      if (ranked.length === 0)
-        setLocErr(`Nothing saved within ${RADIUS_MI} miles of where you are right now. (Your spots are around ${trip.destination || "your destination"} — this lights up once you're there.)`);
-    } catch (e) {
-      setLocErr(e && e.message === "no-geo"
-        ? "Location services aren't available here. This works once the app is deployed; the in-chat preview can block location access."
-        : "Couldn't read your location — access may be blocked. Allow location for this page and try again.");
-    }
-    setLocating(false);
-  };
-
-  const showNearby = Array.isArray(nearby);
-  const baseList = showNearby ? nearby.map((x) => x.place) : trip.places;
-  const presentCats = PLACE_CATS.filter((c) => trip.places.some((p) => p.category === c));
-  const list = filterCat === "All" ? baseList : baseList.filter((p) => p.category === filterCat);
-  const distOf = (id) => showNearby ? (nearby.find((x) => x.place.id === id) || {}).distMi : null;
-
-  return (
-    <>
-      <button onClick={findNearby} disabled={locating} className="np-mono"
-        style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 14, borderRadius: 26, padding: "12px 0", fontSize: 14.9, fontWeight: 600, cursor: locating ? "default" : "pointer", border: "1px solid var(--glass-line)", background: showNearby ? "var(--shout)" : "rgba(242,223,198,.06)", color: showNearby ? "var(--ink)" : "var(--white)", letterSpacing: ".01em" }}>
-        <Ico n="locate" s={15} c={showNearby ? "var(--ink)" : "var(--white)"} />
-        {locating ? "Finding spots near you…" : showNearby ? "Show all spots" : "Find spots near me (within 3 mi)"}
-      </button>
-
-      {locErr && !locating && (
-        <div className="np-card" style={{ borderRadius: 26, padding: 13, marginBottom: 12, fontSize: 14.9, color: "var(--dim)", lineHeight: 1.45 }}>{locErr}</div>
-      )}
-
-      {presentCats.length > 1 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
-          {["All", ...presentCats].map((c) => {
-            const on = filterCat === c;
-            const col = c === "All" ? "var(--shout)" : (TAG_COLOR[c] || "var(--shout)");
-            const count = c === "All" ? baseList.length : baseList.filter((p) => p.category === c).length;
-            return (
-              <button key={c} onClick={() => setFilterCat(c)} className="np-mono"
-                style={{ fontSize: 12.4, fontWeight: 600, letterSpacing: ".05em", textTransform: "uppercase", padding: "7px 11px", borderRadius: 999, cursor: "pointer", border: `1px solid ${on ? col : "var(--glass-line)"}`, background: on ? col : "rgba(242,223,198,.06)", color: on ? "var(--ink)" : "var(--white)", transition: "all .15s" }}>
-                {c}{c !== "All" ? ` ${count}` : ""}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {showNearby && nearby.length > 0 && (
-        <div className="np-mono" style={{ fontSize: 12.4, letterSpacing: ".12em", color: "var(--shout)", textTransform: "uppercase", marginBottom: 10 }}>
-          Close by · {nearby.length} within {RADIUS_MI} mi
-        </div>
-      )}
-
-      {!showNearby && trip.places.length === 0 && <Empty icon="pin" title="No spots saved" sub="Save places to hit. Each gets one-tap directions from your home base." compact />}
-
-      {trip.places.length > 0 && list.length === 0 && filterCat !== "All" && (
-        <Empty icon="pin" title={`No ${filterCat} spots ${showNearby ? "nearby" : "yet"}`} sub="Tap another category, or All to see everything." compact />
-      )}
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {list.map((p) => (
-          <SwipeRow key={p.id} onDelete={() => del(p.id)} label={p.name}>
-            <PlaceCard p={p} days={days} dist={distOf(p.id)} onAddToPlan={addToPlan} />
-          </SwipeRow>
-        ))}
-      </div>
-
-      {!showNearby && (
-        <div className="np-card" style={{ borderRadius: 28, padding: 10, marginTop: 14 }}>
-          <div style={{ display: "flex", gap: 6, marginBottom: 9, flexWrap: "wrap" }}>
-            {PLACE_CATS.map((c) => (
-              <button key={c} onClick={() => setCat(c)} className="np-mono" style={{ flex: "1 0 18%", fontSize: 12.8, padding: "6px 0", borderRadius: 999, cursor: "pointer", border: "1px solid var(--glass-line)", background: cat === c ? "var(--shout)" : "transparent", color: cat === c ? "var(--ink)" : "var(--dim)" }}>{c}</button>
-            ))}
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <input value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} placeholder="Place name…" className="np-in" style={{ ...inStyle, flex: 1 }} />
-            <button onClick={add} aria-label="Add place" style={addBtn}><Ico n="plus" s={18} c="var(--ink)" /></button>
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
 
 // ---- shared -----------------------------------------------------------------
 // Category / stage badge, shared so every card that shows one — Spots, Lineup,
@@ -964,57 +767,6 @@ function SwipeRow({ children, onDelete, label = "item" }) {
   );
 }
 
-// One saved place. Owns its own expand state so the list does not track it by id.
-function PlaceCard({ p, days, dist, onAddToPlan }) {
-  const [openPlan, setOpenPlan] = useState(false);
-  const [addedTo, setAddedTo] = useState(null);
-
-  return (
-    <div className="np-card np-pop" style={{ borderRadius: 32, padding: 14 }}>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 7 }}>
-            <Pill label={p.category} color={TAG_COLOR[p.category]} />
-            {dist != null && <span className="np-mono" style={{ fontSize: 12.1, color: "var(--dim)" }}>{dist < 0.1 ? "<0.1" : dist.toFixed(1)} mi</span>}
-          </div>
-          <div style={{ fontSize: 20.4, fontWeight: 700, lineHeight: 1.2, marginTop: 7 }}>{p.name}</div>
-          {p.near && <div className="np-mono" style={{ fontSize: 12.1, color: "var(--dim)", marginTop: 3 }}>{p.near}</div>}
-        </div>
-        <button onClick={() => { setOpenPlan((v) => !v); setAddedTo(null); }} aria-label="Add to plans" style={{ ...iconBtn, width: 38, height: 38, flexShrink: 0, background: openPlan ? "var(--shout)" : "rgba(242,223,198,.06)" }}>
-          <Ico n="cal" s={16} c={openPlan ? "var(--ink)" : "var(--white)"} />
-        </button>
-      </div>
-      {p.summary && <div style={{ fontSize: 14.9, color: "var(--dim)", lineHeight: 1.5, marginTop: 9 }}>{p.summary}</div>}
-      {p.url && (
-        <a href={p.url} target="_blank" rel="noopener noreferrer" className="np-mono" style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 8, fontSize: 13.1, fontWeight: 600, color: "var(--shout)", textDecoration: "none", letterSpacing: ".03em", textTransform: "uppercase" }}>
-          More info ↗
-        </a>
-      )}
-      {openPlan && (
-        <div className="np-pop" style={{ marginTop: 11, borderTop: "1px solid var(--glass-line)", paddingTop: 11 }}>
-          <div className="np-mono" style={{ fontSize: 11.9, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--dim)", marginBottom: 8 }}>Add to a day</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {days.map((iso) => {
-              const ch = fmtChip(iso);
-              const on = addedTo === iso;
-              return (
-                <button key={iso} onClick={() => { onAddToPlan(p, iso); setAddedTo(iso); }} className="np-mono" style={{ fontSize: 13.1, padding: "7px 11px", borderRadius: 999, cursor: "pointer", border: "1px solid var(--glass-line)", background: on ? "var(--shout)" : "rgba(242,223,198,.06)", color: on ? "var(--ink)" : "var(--white)" }}>
-                  {ch.wd} {ch.mo} {ch.day}
-                </button>
-              );
-            })}
-          </div>
-          {addedTo && (
-            <div className="np-mono" style={{ fontSize: 13.1, color: "var(--shout)", marginTop: 9, lineHeight: 1.4 }}>
-              Added to your Plans as an any-time item — open Plans to give it a time.
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 function DataTools({ trip, save }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
@@ -1079,6 +831,5 @@ function Empty({ icon, title, sub, action, onAction, compact }) {
 // Shared control styling. Pills everywhere — no mid-size radii anywhere in the UI.
 const inStyle = { width: "100%", padding: "13px 17px", fontSize: 16, border: "none" };
 const addBtn = { width: 46, height: 46, flexShrink: 0, borderRadius: 999, border: "none", background: "var(--shout)", color: "var(--ink)", display: "grid", placeItems: "center", cursor: "pointer" };
-const iconBtn = { width: 40, height: 40, flexShrink: 0, borderRadius: 999, border: "1px solid var(--glass-line)", background: "rgba(242,223,198,.06)", display: "grid", placeItems: "center", cursor: "pointer" };
 const ghost = { background: "none", border: "none", cursor: "pointer", color: "rgba(242,223,198,.42)", padding: 0, display: "grid", placeItems: "center" };
 const primaryBtn = { marginTop: 4, background: "var(--shout)", color: "var(--ink)", border: "none", borderRadius: 999, padding: "14px 0", fontWeight: 700, fontSize: 13.8, cursor: "pointer", letterSpacing: ".01em" };
