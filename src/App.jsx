@@ -304,7 +304,7 @@ const PLACES_VERSION = 3;
 // never resurrects a spot you already scheduled or deleted. "More info" points
 // at a Maps search rather than a homepage — for a trip that's the more useful
 // link (hours, phone, directions, reviews) and it can't rot.
-const SPOTS_VERSION = 1;
+const SPOTS_VERSION = 2;
 const mapsUrl = (q) => `https://www.google.com/maps/search/?api=1&query=${enc(q)}`;
 const spot = (id, category, name, near, summary) =>
   ({ id: `place-${id}`, category, name, near, summary, url: mapsUrl(`${name} ${near}`) });
@@ -319,8 +319,8 @@ const SPOTS_SEED = [
     "The other big name, famous for both clam cakes and doughboys. Try the white and the clear RI-style chowder — most people say the clear broth is more authentic."),
   spot("monahans", "Clam Cakes", "Monahan's Clam Shack by the Sea", "Narragansett, RI",
     "Oceanfront, with huge clam cakes actually loaded with clam."),
-  spot("roy-boys", "Clam Cakes", "Roy Boy's Clam Shack", "North Kingstown, RI",
-    "Won the Providence Journal's Rhode Island's Best Clam Shack title. Walk-up window, classic nostalgic vibe, fresh clam cakes."),
+  spot("roy-boys", "Clam Cakes", "Roy Boy's Clam Shack", "6710 Post Rd, North Kingstown, RI",
+    "Won the Providence Journal's Rhode Island's Best Clam Shack title. Walk-up window, classic nostalgic vibe, fresh clam cakes — and the Frozen Cow ice cream shoppe shares the lot."),
   spot("gardners-wharf", "Clam Cakes", "Gardner's Wharf Seafood", "Wickford, North Kingstown, RI",
     "Quieter wharf-side spot in Wickford — good chowder and clam cakes with harbor views."),
   spot("flos", "Clam Cakes", "Flo's Clam Shack", "Middletown, RI",
@@ -377,6 +377,8 @@ const SPOTS_SEED = [
     "Quick counter service with solid breakfast sandwiches. Opens at 6:30am."),
   spot("east-ferry", "Food", "East Ferry Market & Deli", "Jamestown, RI",
     "Halfway point between Newport and North Kingstown — deli-style breakfast sandwiches with a harbor view."),
+  spot("wickford-on-the-water", "Food", "Wickford on the Water", "85 Brown St, North Kingstown, RI",
+    "Family-run waterfront kitchen on Wickford Cove, serving breakfast through dinner. Multiple patios and decks looking out over the harbor."),
 ];
 
 export default function App() {
@@ -472,11 +474,20 @@ export default function App() {
       }
     }
     if ((t.spotsVersion || 0) < SPOTS_VERSION) {
-      // Seed the Spots list by id. Anything already present (scheduled into a
-      // day, or edited) is left exactly as it is.
+      // Seed the Spots list by id: add anything new, and refresh the blurb
+      // fields on seeds already stored so corrections actually reach installed
+      // copies. `name` is deliberately not refreshed — a scheduled Plans item
+      // holds its own copy of the title, and rewriting one without the other
+      // would desync them.
+      const byId = {};
+      SPOTS_SEED.forEach((s) => { byId[s.id] = s; });
       const have = new Set((t.places || []).map((p) => p.id));
+      const refreshed = (t.places || []).map((p) => {
+        const s = byId[p.id];
+        return s ? { ...p, category: s.category, near: s.near, summary: s.summary, url: s.url } : p;
+      });
       const fresh = SPOTS_SEED.filter((s) => !have.has(s.id));
-      t = { ...t, places: [...(t.places || []), ...fresh], spotsVersion: SPOTS_VERSION };
+      t = { ...t, places: [...refreshed, ...fresh], spotsVersion: SPOTS_VERSION };
       mutated = true;
     }
     if (mutated) {
