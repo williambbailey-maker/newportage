@@ -51,7 +51,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,ui-s
 .np-display{font-weight:800;letter-spacing:-.035em;line-height:.94;}
 
 /* Tiny functional labels, so the hero type carries the weight */
-.np-label{font-size:10px;text-transform:uppercase;letter-spacing:.18em;font-weight:700;}
+.np-label{font-size:11px;text-transform:uppercase;letter-spacing:.18em;font-weight:700;}
 
 /* Poster masthead. The page background is already the poster's navy field, so
    this carries no panel of its own — the wordmark sits directly on it, the way
@@ -73,12 +73,12 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,ui-s
   text-transform:uppercase;white-space:nowrap;}
 .np-poster-row2{display:flex;align-items:baseline;justify-content:space-between;gap:12px;}
 .np-poster-sub{color:var(--poster-orange);font-weight:800;white-space:nowrap;
-  font-size:clamp(11px,3.4vw,16px);letter-spacing:.26em;text-transform:uppercase;
+  font-size:clamp(12.1px,3.74vw,17.6px);letter-spacing:.26em;text-transform:uppercase;
   padding-bottom:.1em;}
 .np-poster-rule{height:1px;background:rgba(242,223,198,.18);margin:16px 0 13px;}
-.np-poster-date{color:var(--poster-cream);font-size:11px;font-weight:700;
+.np-poster-date{color:var(--poster-cream);font-size:12.1px;font-weight:700;
   letter-spacing:.16em;text-transform:uppercase;}
-.np-poster-year{color:var(--poster-orange);font-weight:800;font-size:23px;
+.np-poster-year{color:var(--poster-orange);font-weight:800;font-size:25.3px;
   letter-spacing:.06em;line-height:1;margin-top:3px;}
 
 .np-in{background:rgba(242,223,198,.06);border:1px solid var(--glass-line);color:var(--white);
@@ -387,7 +387,7 @@ export default function App() {
         <div className="np-card" style={{ display: "flex", gap: 4, padding: 5, borderRadius: 999, marginTop: 20, position: "sticky", top: 10, zIndex: 5 }}>
           {TABS.map(([id, icon, label]) => (
             <button key={id} onClick={() => setTab(id)} aria-pressed={tab === id}
-              style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "10px 0", borderRadius: 999, border: "none", cursor: "pointer", fontSize: 11.5, fontWeight: 700, letterSpacing: "-.01em", background: tab === id ? "var(--shout)" : "transparent", color: tab === id ? "var(--ink)" : "rgba(242,223,198,.55)" }}>
+              style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "10px 0", borderRadius: 999, border: "none", cursor: "pointer", fontSize: 12.7, fontWeight: 700, letterSpacing: "-.01em", background: tab === id ? "var(--shout)" : "transparent", color: tab === id ? "var(--ink)" : "rgba(242,223,198,.55)" }}>
               <Ico n={icon} s={13} w={2.4} /> {label}
             </button>
           ))}
@@ -441,7 +441,7 @@ function Header({ trip, countdown }) {
         </div>
         {countdown !== null && (
           <div style={{ textAlign: "right", flexShrink: 0 }}>
-            <div style={{ fontSize: 23, fontWeight: 800, lineHeight: 1, letterSpacing: "-.01em", color: "var(--poster-gold)" }}>
+            <div style={{ fontSize: 25.3, fontWeight: 800, lineHeight: 1, letterSpacing: "-.01em", color: "var(--poster-gold)" }}>
               {countdown > 0 ? countdown : countdown === 0 ? "Today" : "—"}
             </div>
             <div className="np-poster-date" style={{ opacity: .7, marginTop: 4 }}>
@@ -478,9 +478,9 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
           const c = fmtChip(iso); const on = iso === activeDay; const n = (trip.days[iso] || []).length;
           return (
             <button key={iso} onClick={() => setActiveDay(iso)} style={{ flex: "0 0 auto", width: 56, padding: "9px 0", borderRadius: 28, cursor: "pointer", border: on ? "1px solid var(--shout)" : "1px solid var(--glass-line)", background: on ? "var(--shout)" : "rgba(242,223,198,.06)", color: on ? "var(--ink)" : "var(--white)", textAlign: "center" }}>
-              <div className="np-mono" style={{ fontSize: 9.5, letterSpacing: ".08em", opacity: .7, textTransform: "uppercase" }}>{c.wd}</div>
-              <div style={{ fontSize: 18, fontWeight: 700, lineHeight: 1.1 }}>{c.day}</div>
-              <div className="np-mono" style={{ fontSize: 9, opacity: on ? .85 : .5 }}>{n ? `${n}·plan` : "—"}</div>
+              <div className="np-mono" style={{ fontSize: 10.5, letterSpacing: ".08em", opacity: .7, textTransform: "uppercase" }}>{c.wd}</div>
+              <div style={{ fontSize: 19.8, fontWeight: 700, lineHeight: 1.1 }}>{c.day}</div>
+              <div className="np-mono" style={{ fontSize: 9.9, opacity: on ? .85 : .5 }}>{n ? `${n}·plan` : "—"}</div>
             </button>
           );
         })}
@@ -497,17 +497,17 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
           <div key={it.id} className="np-card np-pop" style={{ borderRadius: 32, padding: 14 }}>
             <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 18.5, fontWeight: 700, lineHeight: 1.2 }}>{it.title}</div>
+                <div style={{ fontSize: 20.4, fontWeight: 700, lineHeight: 1.2 }}>{it.title}</div>
 
                 {sourcePlace && (
                   <>
                     <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 7, marginTop: 7 }}>
                       <Pill label={sourcePlace.category} color={TAG_COLOR[sourcePlace.category]} />
-                      {sourcePlace.near && <span className="np-mono" style={{ fontSize: 11, color: "var(--dim)" }}>{sourcePlace.near}</span>}
+                      {sourcePlace.near && <span className="np-mono" style={{ fontSize: 12.1, color: "var(--dim)" }}>{sourcePlace.near}</span>}
                     </div>
-                    {sourcePlace.summary && <div style={{ fontSize: 13.5, color: "var(--dim)", lineHeight: 1.5, marginTop: 9 }}>{sourcePlace.summary}</div>}
+                    {sourcePlace.summary && <div style={{ fontSize: 14.9, color: "var(--dim)", lineHeight: 1.5, marginTop: 9 }}>{sourcePlace.summary}</div>}
                     {sourcePlace.url && (
-                      <a href={sourcePlace.url} target="_blank" rel="noopener noreferrer" className="np-mono" style={{ display: "flex", width: "fit-content", alignItems: "center", gap: 4, marginTop: 8, fontSize: 11.9, fontWeight: 600, color: "var(--shout)", textDecoration: "none", letterSpacing: ".03em", textTransform: "uppercase" }}>
+                      <a href={sourcePlace.url} target="_blank" rel="noopener noreferrer" className="np-mono" style={{ display: "flex", width: "fit-content", alignItems: "center", gap: 4, marginTop: 8, fontSize: 13.1, fontWeight: 600, color: "var(--shout)", textDecoration: "none", letterSpacing: ".03em", textTransform: "uppercase" }}>
                         More info ↗
                       </a>
                     )}
@@ -516,7 +516,7 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
 
                 {/* Seeded blocks carry their own standing detail (e.g. the fest
                     venue and end time); it's fixed copy, not an editable note. */}
-                {it.note && <div style={{ fontSize: 13.5, color: "var(--dim)", lineHeight: 1.5, marginTop: 9 }}>{it.note}</div>}
+                {it.note && <div style={{ fontSize: 14.9, color: "var(--dim)", lineHeight: 1.5, marginTop: 9 }}>{it.note}</div>}
               </div>
               <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                 {mapTarget && (
@@ -569,10 +569,10 @@ function Lineup({ trip, days, save }) {
     <>
       <div className="np-card" style={{ borderRadius: 32, padding: "14px 16px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <div className="np-mono" style={{ fontSize: 10, letterSpacing: ".14em", color: "var(--shout)", textTransform: "uppercase" }}>Festival</div>
-          <div style={{ fontSize: 19, fontWeight: 700, lineHeight: 1.1 }}>{onlyStar ? "Your must-sees" : "Who's playing"}</div>
+          <div className="np-mono" style={{ fontSize: 11, letterSpacing: ".14em", color: "var(--shout)", textTransform: "uppercase" }}>Festival</div>
+          <div style={{ fontSize: 20.9, fontWeight: 700, lineHeight: 1.1 }}>{onlyStar ? "Your must-sees" : "Who's playing"}</div>
         </div>
-        <button onClick={() => setOnlyStar((v) => !v)} aria-pressed={onlyStar} className="np-mono" style={{ display: "flex", alignItems: "center", gap: 5, border: "1px solid var(--glass-line)", background: onlyStar ? "var(--shout)" : "transparent", color: onlyStar ? "var(--ink)" : "var(--dim)", borderRadius: 999, padding: "7px 11px", fontSize: 11, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
+        <button onClick={() => setOnlyStar((v) => !v)} aria-pressed={onlyStar} className="np-mono" style={{ display: "flex", alignItems: "center", gap: 5, border: "1px solid var(--glass-line)", background: onlyStar ? "var(--shout)" : "transparent", color: onlyStar ? "var(--ink)" : "var(--dim)", borderRadius: 999, padding: "7px 11px", fontSize: 12.1, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
           <Ico n="star" s={13} c={onlyStar ? "var(--ink)" : "var(--shout)"} fill={onlyStar ? "var(--ink)" : "none"} /> {onlyStar ? "Must-see" : "All sets"}
         </button>
       </div>
@@ -584,7 +584,7 @@ function Lineup({ trip, days, save }) {
             const col = s === "All" ? "var(--shout)" : (STAGE_COLOR[s] || "var(--shout)");
             return (
               <button key={s} onClick={() => setStageFilter(s)} className="np-mono"
-                style={{ fontSize: 11.3, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase", padding: "7px 11px", borderRadius: 999, cursor: "pointer", border: `1px solid ${on ? col : "var(--glass-line)"}`, background: on ? col : "rgba(242,223,198,.06)", color: on ? "var(--ink)" : "var(--white)", transition: "all .15s" }}>
+                style={{ fontSize: 12.4, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase", padding: "7px 11px", borderRadius: 999, cursor: "pointer", border: `1px solid ${on ? col : "var(--glass-line)"}`, background: on ? col : "rgba(242,223,198,.06)", color: on ? "var(--ink)" : "var(--white)", transition: "all .15s" }}>
                 {s === "All" ? "All stages" : s.replace(" Stage", "")}
               </button>
             );
@@ -603,7 +603,7 @@ function Lineup({ trip, days, save }) {
 
       {keys.map((k) => (
         <div key={k} style={{ marginBottom: 16 }}>
-          <div className="np-mono" style={{ fontSize: 10.5, letterSpacing: ".12em", color: "var(--dim)", textTransform: "uppercase", marginBottom: 8 }}>
+          <div className="np-mono" style={{ fontSize: 11.6, letterSpacing: ".12em", color: "var(--dim)", textTransform: "uppercase", marginBottom: 8 }}>
             {k === "Unscheduled" ? "Unscheduled — check the poster" : `${fmtChip(k).wd} · ${fmtChip(k).mo} ${fmtChip(k).day}`}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
@@ -614,9 +614,9 @@ function Lineup({ trip, days, save }) {
                     <Ico n="star" s={20} c="var(--shout)" fill={a.starred ? "var(--shout)" : "none"} />
                   </button>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 18.5, fontWeight: 700, lineHeight: 1.2 }}>{a.artist}</div>
+                    <div style={{ fontSize: 20.4, fontWeight: 700, lineHeight: 1.2 }}>{a.artist}</div>
                     <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 7, marginTop: 7 }}>
-                      <span className="np-mono" style={{ fontSize: 11.5, fontWeight: 600, color: a.time ? "var(--white)" : "var(--dim)" }}>{fmtSlot(a)}</span>
+                      <span className="np-mono" style={{ fontSize: 12.7, fontWeight: 600, color: a.time ? "var(--white)" : "var(--dim)" }}>{fmtSlot(a)}</span>
                       {a.stage ? <Pill label={a.stage.replace(" Stage", "")} color={STAGE_COLOR[a.stage]} /> : <DashedPill label="Stage TBA" />}
                     </div>
                   </div>
@@ -630,20 +630,20 @@ function Lineup({ trip, days, save }) {
 
       <div className="np-card" style={{ borderRadius: 28, padding: 12, marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
         <input value={artist} onChange={(e) => setArtist(e.target.value)} placeholder="Artist / act" className="np-in" style={inStyle} />
-        <select value={stage} onChange={(e) => setStage(e.target.value)} className="np-in np-mono" style={{ ...inStyle, fontSize: 12.5 }}>
+        <select value={stage} onChange={(e) => setStage(e.target.value)} className="np-in np-mono" style={{ ...inStyle, fontSize: 13.8 }}>
           <option value="">Stage TBA</option>
           {STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
         <div style={{ display: "flex", gap: 8 }}>
           {days.length ? (
-            <select value={date} onChange={(e) => setDate(e.target.value)} className="np-in np-mono" style={{ ...inStyle, flex: 1, fontSize: 12.5 }}>
+            <select value={date} onChange={(e) => setDate(e.target.value)} className="np-in np-mono" style={{ ...inStyle, flex: 1, fontSize: 13.8 }}>
               <option value="">No date</option>
               {days.map((d) => <option key={d} value={d}>{`${fmtChip(d).wd} ${fmtChip(d).mo} ${fmtChip(d).day}`}</option>)}
             </select>
           ) : (
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="np-in np-mono" style={{ ...inStyle, flex: 1, fontSize: 12.5 }} />
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="np-in np-mono" style={{ ...inStyle, flex: 1, fontSize: 13.8 }} />
           )}
-          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="np-in np-mono" style={{ ...inStyle, width: 128, fontSize: 12.5 }} />
+          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="np-in np-mono" style={{ ...inStyle, width: 128, fontSize: 13.8 }} />
           <button onClick={add} aria-label="Add act" style={addBtn}><Ico n="plus" s={18} c="var(--ink)" /></button>
         </div>
       </div>
@@ -738,13 +738,13 @@ function Places({ trip, days, save }) {
   return (
     <>
       <button onClick={findNearby} disabled={locating} className="np-mono"
-        style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 14, borderRadius: 26, padding: "12px 0", fontSize: 13.5, fontWeight: 600, cursor: locating ? "default" : "pointer", border: "1px solid var(--glass-line)", background: showNearby ? "var(--shout)" : "rgba(242,223,198,.06)", color: showNearby ? "var(--ink)" : "var(--white)", letterSpacing: ".01em" }}>
+        style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 14, borderRadius: 26, padding: "12px 0", fontSize: 14.9, fontWeight: 600, cursor: locating ? "default" : "pointer", border: "1px solid var(--glass-line)", background: showNearby ? "var(--shout)" : "rgba(242,223,198,.06)", color: showNearby ? "var(--ink)" : "var(--white)", letterSpacing: ".01em" }}>
         <Ico n="locate" s={15} c={showNearby ? "var(--ink)" : "var(--white)"} />
         {locating ? "Finding spots near you…" : showNearby ? "Show all spots" : "Find spots near me (within 3 mi)"}
       </button>
 
       {locErr && !locating && (
-        <div className="np-card" style={{ borderRadius: 26, padding: 13, marginBottom: 12, fontSize: 13.5, color: "var(--dim)", lineHeight: 1.45 }}>{locErr}</div>
+        <div className="np-card" style={{ borderRadius: 26, padding: 13, marginBottom: 12, fontSize: 14.9, color: "var(--dim)", lineHeight: 1.45 }}>{locErr}</div>
       )}
 
       {presentCats.length > 1 && (
@@ -755,7 +755,7 @@ function Places({ trip, days, save }) {
             const count = c === "All" ? baseList.length : baseList.filter((p) => p.category === c).length;
             return (
               <button key={c} onClick={() => setFilterCat(c)} className="np-mono"
-                style={{ fontSize: 11.3, fontWeight: 600, letterSpacing: ".05em", textTransform: "uppercase", padding: "7px 11px", borderRadius: 999, cursor: "pointer", border: `1px solid ${on ? col : "var(--glass-line)"}`, background: on ? col : "rgba(242,223,198,.06)", color: on ? "var(--ink)" : "var(--white)", transition: "all .15s" }}>
+                style={{ fontSize: 12.4, fontWeight: 600, letterSpacing: ".05em", textTransform: "uppercase", padding: "7px 11px", borderRadius: 999, cursor: "pointer", border: `1px solid ${on ? col : "var(--glass-line)"}`, background: on ? col : "rgba(242,223,198,.06)", color: on ? "var(--ink)" : "var(--white)", transition: "all .15s" }}>
                 {c}{c !== "All" ? ` ${count}` : ""}
               </button>
             );
@@ -764,7 +764,7 @@ function Places({ trip, days, save }) {
       )}
 
       {showNearby && nearby.length > 0 && (
-        <div className="np-mono" style={{ fontSize: 11.3, letterSpacing: ".12em", color: "var(--shout)", textTransform: "uppercase", marginBottom: 10 }}>
+        <div className="np-mono" style={{ fontSize: 12.4, letterSpacing: ".12em", color: "var(--shout)", textTransform: "uppercase", marginBottom: 10 }}>
           Close by · {nearby.length} within {RADIUS_MI} mi
         </div>
       )}
@@ -786,7 +786,7 @@ function Places({ trip, days, save }) {
         <div className="np-card" style={{ borderRadius: 28, padding: 10, marginTop: 14 }}>
           <div style={{ display: "flex", gap: 6, marginBottom: 9, flexWrap: "wrap" }}>
             {PLACE_CATS.map((c) => (
-              <button key={c} onClick={() => setCat(c)} className="np-mono" style={{ flex: "1 0 18%", fontSize: 11.6, padding: "6px 0", borderRadius: 999, cursor: "pointer", border: "1px solid var(--glass-line)", background: cat === c ? "var(--shout)" : "transparent", color: cat === c ? "var(--ink)" : "var(--dim)" }}>{c}</button>
+              <button key={c} onClick={() => setCat(c)} className="np-mono" style={{ flex: "1 0 18%", fontSize: 12.8, padding: "6px 0", borderRadius: 999, cursor: "pointer", border: "1px solid var(--glass-line)", background: cat === c ? "var(--shout)" : "transparent", color: cat === c ? "var(--ink)" : "var(--dim)" }}>{c}</button>
             ))}
           </div>
           <div style={{ display: "flex", gap: 8 }}>
@@ -804,14 +804,14 @@ function Places({ trip, days, save }) {
 // and a sourced Plans item — renders it identically.
 function Pill({ label, color }) {
   return (
-    <span className="np-mono" style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--ink)", background: color || "var(--shout)", borderRadius: 999, padding: "4px 9px" }}>
+    <span className="np-mono" style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--ink)", background: color || "var(--shout)", borderRadius: 999, padding: "4px 9px" }}>
       {label}
     </span>
   );
 }
 function DashedPill({ label }) {
   return (
-    <span className="np-mono" style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--dim)", border: "1px dashed var(--glass-line)", borderRadius: 999, padding: "3px 8px" }}>
+    <span className="np-mono" style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--dim)", border: "1px dashed var(--glass-line)", borderRadius: 999, padding: "3px 8px" }}>
       {label}
     </span>
   );
@@ -832,10 +832,10 @@ function PlaceCard({ p, trip, days, dist, onDelete, onAddToPlan }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 7 }}>
             <Pill label={p.category} color={TAG_COLOR[p.category]} />
-            {dist != null && <span className="np-mono" style={{ fontSize: 11, color: "var(--dim)" }}>{dist < 0.1 ? "<0.1" : dist.toFixed(1)} mi</span>}
+            {dist != null && <span className="np-mono" style={{ fontSize: 12.1, color: "var(--dim)" }}>{dist < 0.1 ? "<0.1" : dist.toFixed(1)} mi</span>}
           </div>
-          <div style={{ fontSize: 18.5, fontWeight: 700, lineHeight: 1.2, marginTop: 7 }}>{p.name}</div>
-          {p.near && <div className="np-mono" style={{ fontSize: 11, color: "var(--dim)", marginTop: 3 }}>{p.near}</div>}
+          <div style={{ fontSize: 20.4, fontWeight: 700, lineHeight: 1.2, marginTop: 7 }}>{p.name}</div>
+          {p.near && <div className="np-mono" style={{ fontSize: 12.1, color: "var(--dim)", marginTop: 3 }}>{p.near}</div>}
         </div>
         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
           <button onClick={() => { setOpenPlan((v) => !v); setAddedTo(null); }} aria-label="Add to plans" style={{ ...iconBtn, width: 38, height: 38, background: openPlan ? "var(--shout)" : "rgba(242,223,198,.06)" }}>
@@ -847,28 +847,28 @@ function PlaceCard({ p, trip, days, dist, onDelete, onAddToPlan }) {
           <button onClick={onDelete} aria-label="Remove" style={ghost}><Ico n="trash" s={15} /></button>
         </div>
       </div>
-      {p.summary && <div style={{ fontSize: 13.5, color: "var(--dim)", lineHeight: 1.5, marginTop: 9 }}>{p.summary}</div>}
+      {p.summary && <div style={{ fontSize: 14.9, color: "var(--dim)", lineHeight: 1.5, marginTop: 9 }}>{p.summary}</div>}
       {p.url && (
-        <a href={p.url} target="_blank" rel="noopener noreferrer" className="np-mono" style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 8, fontSize: 11.9, fontWeight: 600, color: "var(--shout)", textDecoration: "none", letterSpacing: ".03em", textTransform: "uppercase" }}>
+        <a href={p.url} target="_blank" rel="noopener noreferrer" className="np-mono" style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 8, fontSize: 13.1, fontWeight: 600, color: "var(--shout)", textDecoration: "none", letterSpacing: ".03em", textTransform: "uppercase" }}>
           More info ↗
         </a>
       )}
       {openPlan && (
         <div className="np-pop" style={{ marginTop: 11, borderTop: "1px solid var(--glass-line)", paddingTop: 11 }}>
-          <div className="np-mono" style={{ fontSize: 10.8, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--dim)", marginBottom: 8 }}>Add to a day</div>
+          <div className="np-mono" style={{ fontSize: 11.9, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--dim)", marginBottom: 8 }}>Add to a day</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {days.map((iso) => {
               const ch = fmtChip(iso);
               const on = addedTo === iso;
               return (
-                <button key={iso} onClick={() => { onAddToPlan(p, iso); setAddedTo(iso); }} className="np-mono" style={{ fontSize: 11.9, padding: "7px 11px", borderRadius: 999, cursor: "pointer", border: "1px solid var(--glass-line)", background: on ? "var(--shout)" : "rgba(242,223,198,.06)", color: on ? "var(--ink)" : "var(--white)" }}>
+                <button key={iso} onClick={() => { onAddToPlan(p, iso); setAddedTo(iso); }} className="np-mono" style={{ fontSize: 13.1, padding: "7px 11px", borderRadius: 999, cursor: "pointer", border: "1px solid var(--glass-line)", background: on ? "var(--shout)" : "rgba(242,223,198,.06)", color: on ? "var(--ink)" : "var(--white)" }}>
                   {ch.wd} {ch.mo} {ch.day}
                 </button>
               );
             })}
           </div>
           {addedTo && (
-            <div className="np-mono" style={{ fontSize: 11.9, color: "var(--shout)", marginTop: 9, lineHeight: 1.4 }}>
+            <div className="np-mono" style={{ fontSize: 13.1, color: "var(--shout)", marginTop: 9, lineHeight: 1.4 }}>
               Added to your Plans as an any-time item — open Plans to give it a time.
             </div>
           )}
@@ -894,11 +894,11 @@ function MapPanel({ from, to }) {
           style={{ width: "100%", height: 190, border: 0, display: "block" }} />
       </div>
       <a href={ext} target="_blank" rel="noopener noreferrer" className="np-mono"
-        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, marginTop: 8, background: "var(--shout)", color: "var(--ink)", borderRadius: 999, padding: "11px 0", fontSize: 12.5, fontWeight: 600, textDecoration: "none", letterSpacing: ".01em" }}>
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, marginTop: 8, background: "var(--shout)", color: "var(--ink)", borderRadius: 999, padding: "11px 0", fontSize: 13.8, fontWeight: 600, textDecoration: "none", letterSpacing: ".01em" }}>
         <Ico n="route" s={15} c="var(--ink)" /> Directions in Google Maps
       </a>
       {from && (
-        <div className="np-mono" style={{ fontSize: 10, color: "var(--dim)", textAlign: "center", marginTop: 6 }}>
+        <div className="np-mono" style={{ fontSize: 11, color: "var(--dim)", textAlign: "center", marginTop: 6 }}>
           from {from}
         </div>
       )}
@@ -925,26 +925,26 @@ function DataTools({ trip, save }) {
   if (!open)
     return (
       <div style={{ textAlign: "center", marginTop: 10 }}>
-        <button onClick={() => setOpen(true)} className="np-mono" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 9.5, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--dim)", opacity: .8 }}>Backup &amp; restore</button>
+        <button onClick={() => setOpen(true)} className="np-mono" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10.5, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--dim)", opacity: .8 }}>Backup &amp; restore</button>
       </div>
     );
   return (
     <div className="np-card np-pop" style={{ borderRadius: 32, padding: 14, marginTop: 12 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-        <span className="np-mono" style={{ fontSize: 10, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--dim)" }}>Backup &amp; restore</span>
+        <span className="np-mono" style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--dim)" }}>Backup &amp; restore</span>
         <button onClick={() => { setOpen(false); setMsg(""); }} aria-label="Close" style={ghost}><Ico n="x" s={15} /></button>
       </div>
-      <div style={{ fontSize: 12, color: "var(--dim)", lineHeight: 1.5, marginBottom: 11 }}>
+      <div style={{ fontSize: 13.2, color: "var(--dim)", lineHeight: 1.5, marginBottom: 11 }}>
         Your edits already save on this device. Use this to keep a copy you control — handy before an update, or to move your trip to another device.
       </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <button onClick={copy} className="np-mono" style={{ flex: 1, minWidth: 130, background: "var(--shout)", color: "var(--ink)", border: "none", borderRadius: 999, padding: "10px 12px", fontSize: 11.5, fontWeight: 600, cursor: "pointer" }}>Copy backup</button>
-        <button onClick={restore} disabled={!text.trim()} className="np-mono" style={{ flex: 1, minWidth: 130, background: text.trim() ? "var(--shout)" : "rgba(242,223,198,.06)", color: text.trim() ? "var(--ink)" : "var(--dim)", border: "none", borderRadius: 999, padding: "10px 12px", fontSize: 11.5, fontWeight: 600, cursor: text.trim() ? "pointer" : "default" }}>Restore from text</button>
+        <button onClick={copy} className="np-mono" style={{ flex: 1, minWidth: 130, background: "var(--shout)", color: "var(--ink)", border: "none", borderRadius: 999, padding: "10px 12px", fontSize: 12.7, fontWeight: 600, cursor: "pointer" }}>Copy backup</button>
+        <button onClick={restore} disabled={!text.trim()} className="np-mono" style={{ flex: 1, minWidth: 130, background: text.trim() ? "var(--shout)" : "rgba(242,223,198,.06)", color: text.trim() ? "var(--ink)" : "var(--dim)", border: "none", borderRadius: 999, padding: "10px 12px", fontSize: 12.7, fontWeight: 600, cursor: text.trim() ? "pointer" : "default" }}>Restore from text</button>
       </div>
-      {msg && <div className="np-mono" style={{ fontSize: 11, color: "var(--shout)", marginTop: 10, lineHeight: 1.4 }}>{msg}</div>}
-      <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Paste a backup here to restore it…" rows={3} className="np-in np-mono" style={{ ...inStyle, marginTop: 10, resize: "vertical", fontSize: 11, lineHeight: 1.4, minHeight: 58, width: "100%", boxSizing: "border-box" }} />
-      <div style={{ fontSize: 11, color: "var(--dim)", marginTop: 9, marginBottom: 4 }}>Or copy your current backup from here:</div>
-      <textarea readOnly value={backup} onFocus={(e) => e.target.select()} rows={3} className="np-in np-mono" style={{ ...inStyle, resize: "vertical", fontSize: 10, lineHeight: 1.35, minHeight: 50, width: "100%", boxSizing: "border-box", color: "var(--dim)" }} />
+      {msg && <div className="np-mono" style={{ fontSize: 12.1, color: "var(--shout)", marginTop: 10, lineHeight: 1.4 }}>{msg}</div>}
+      <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Paste a backup here to restore it…" rows={3} className="np-in np-mono" style={{ ...inStyle, marginTop: 10, resize: "vertical", fontSize: 12.1, lineHeight: 1.4, minHeight: 58, width: "100%", boxSizing: "border-box" }} />
+      <div style={{ fontSize: 12.1, color: "var(--dim)", marginTop: 9, marginBottom: 4 }}>Or copy your current backup from here:</div>
+      <textarea readOnly value={backup} onFocus={(e) => e.target.select()} rows={3} className="np-in np-mono" style={{ ...inStyle, resize: "vertical", fontSize: 11, lineHeight: 1.35, minHeight: 50, width: "100%", boxSizing: "border-box", color: "var(--dim)" }} />
     </div>
   );
 }
@@ -955,8 +955,8 @@ function Empty({ icon, title, sub, action, onAction, compact }) {
       <div style={{ display: "grid", placeItems: "center", width: 54, height: 54, borderRadius: 999, background: "var(--shout)", margin: "0 auto 18px" }}>
         <Ico n={icon} s={23} c="var(--ink)" w={2.4} />
       </div>
-      <div className="np-display" style={{ fontSize: 24 }}>{title}</div>
-      <div style={{ fontSize: 13.5, color: "var(--dim)", marginTop: 10, lineHeight: 1.55, maxWidth: 290, marginLeft: "auto", marginRight: "auto" }}>{sub}</div>
+      <div className="np-display" style={{ fontSize: 26.4 }}>{title}</div>
+      <div style={{ fontSize: 14.9, color: "var(--dim)", marginTop: 10, lineHeight: 1.55, maxWidth: 290, marginLeft: "auto", marginRight: "auto" }}>{sub}</div>
       {action && (
         <button onClick={onAction} className="np-label"
           style={{ marginTop: 20, background: "var(--shout)", color: "var(--ink)", border: "none", borderRadius: 999, padding: "14px 26px", cursor: "pointer" }}>
@@ -968,8 +968,8 @@ function Empty({ icon, title, sub, action, onAction, compact }) {
 }
 
 // Shared control styling. Pills everywhere — no mid-size radii anywhere in the UI.
-const inStyle = { width: "100%", padding: "13px 17px", fontSize: 14.5, border: "none" };
+const inStyle = { width: "100%", padding: "13px 17px", fontSize: 16, border: "none" };
 const addBtn = { width: 46, height: 46, flexShrink: 0, borderRadius: 999, border: "none", background: "var(--shout)", color: "var(--ink)", display: "grid", placeItems: "center", cursor: "pointer" };
 const iconBtn = { width: 40, height: 40, flexShrink: 0, borderRadius: 999, border: "1px solid var(--glass-line)", background: "rgba(242,223,198,.06)", display: "grid", placeItems: "center", cursor: "pointer" };
 const ghost = { background: "none", border: "none", cursor: "pointer", color: "rgba(242,223,198,.42)", padding: 0, display: "grid", placeItems: "center" };
-const primaryBtn = { marginTop: 4, background: "var(--shout)", color: "var(--ink)", border: "none", borderRadius: 999, padding: "14px 0", fontWeight: 700, fontSize: 12.5, cursor: "pointer", letterSpacing: ".01em" };
+const primaryBtn = { marginTop: 4, background: "var(--shout)", color: "var(--ink)", border: "none", borderRadius: 999, padding: "14px 0", fontWeight: 700, fontSize: 13.8, cursor: "pointer", letterSpacing: ".01em" };
