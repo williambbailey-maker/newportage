@@ -117,6 +117,7 @@ const PATHS = {
   star: <polygon points="12 2 14.9 8.6 22 9.3 16.6 14 18.3 21 12 17.3 5.7 21 7.4 14 2 9.3 9.1 8.6" />,
   locate: <><circle cx="12" cy="12" r="7" /><line x1="12" y1="2" x2="12" y2="5" /><line x1="12" y1="19" x2="12" y2="22" /><line x1="2" y1="12" x2="5" y2="12" /><line x1="19" y1="12" x2="22" y2="12" /><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" /></>,
   sun: <><circle cx="12" cy="12" r="4.2" /><path d="M12 2v2.4M12 19.6V22M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2 12h2.4M19.6 12H22M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" /></>,
+  grip: <><circle cx="9" cy="6" r="1.4" fill="currentColor" stroke="none" /><circle cx="15" cy="6" r="1.4" fill="currentColor" stroke="none" /><circle cx="9" cy="12" r="1.4" fill="currentColor" stroke="none" /><circle cx="15" cy="12" r="1.4" fill="currentColor" stroke="none" /><circle cx="9" cy="18" r="1.4" fill="currentColor" stroke="none" /><circle cx="15" cy="18" r="1.4" fill="currentColor" stroke="none" /></>,
 };
 function Ico({ n, s = 16, c = "currentColor", w = 2, fill = "none" }) {
   return (
@@ -458,16 +459,61 @@ function Header({ trip, countdown }) {
 // item shows what it is, and a map button when there's somewhere to route to.
 function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
   const [title, setTitle] = useState("");
+  const [order, setOrder] = useState(null); // live-reordered items while a drag is in progress
+  const [draggingId, setDraggingId] = useState(null);
+  const dragRef = useRef({ id: null, startY: 0, rowH: 70 });
+  const orderRef = useRef(null); // mirrors `order`, readable outside React's render phase
+  const rowRefs = useRef({});
+
   if (!days.length)
     return <Empty icon="cal" title="No trip days" sub="The trip runs Jul 30 – Aug 2." compact />;
 
-  const items = trip.days[activeDay] || [];
+  const stored = trip.days[activeDay] || [];
+  const items = order || stored;
   const add = () => {
     if (!title.trim()) return;
-    save({ ...trip, days: { ...trip.days, [activeDay]: [...items, { id: uid(), title: title.trim() }] } });
+    save({ ...trip, days: { ...trip.days, [activeDay]: [...stored, { id: uid(), title: title.trim() }] } });
     setTitle("");
   };
-  const del = (id) => save({ ...trip, days: { ...trip.days, [activeDay]: items.filter((i) => i.id !== id) } });
+  const del = (id) => save({ ...trip, days: { ...trip.days, [activeDay]: stored.filter((i) => i.id !== id) } });
+
+  const dragMove = (e) => {
+    const d = dragRef.current;
+    if (!d.id) return;
+    const delta = e.clientY - d.startY;
+    const steps = Math.trunc(delta / d.rowH);
+    if (steps !== 0) {
+      const arr = [...(orderRef.current || stored)];
+      const from = arr.findIndex((i) => i.id === d.id);
+      const to = Math.max(0, Math.min(arr.length - 1, from + steps));
+      if (to !== from) { const [moved] = arr.splice(from, 1); arr.splice(to, 0, moved); }
+      orderRef.current = arr;
+      setOrder(arr);
+      d.startY += steps * d.rowH;
+    }
+  };
+  const dragEnd = () => {
+    const d = dragRef.current;
+    if (!d.id) return;
+    d.id = null;
+    window.removeEventListener("pointermove", dragMove);
+    window.removeEventListener("pointerup", dragEnd);
+    setDraggingId(null);
+    setOrder(null);
+    const finalOrder = orderRef.current;
+    orderRef.current = null;
+    if (finalOrder) save({ ...trip, days: { ...trip.days, [activeDay]: finalOrder } });
+  };
+  const dragStart = (e, it) => {
+    e.preventDefault();
+    const row = rowRefs.current[it.id];
+    dragRef.current = { id: it.id, startY: e.clientY, rowH: (row ? row.offsetHeight : 60) + 10 };
+    orderRef.current = stored;
+    setOrder(stored);
+    setDraggingId(it.id);
+    window.addEventListener("pointermove", dragMove);
+    window.addEventListener("pointerup", dragEnd);
+  };
 
   return (
     <>
@@ -489,8 +535,11 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
           // An item added from Spots carries its source record, so it renders with
           // the same info as its Spots card — category, summary, more-info link.
           const sourcePlace = it.fromPlace ? trip.places.find((p) => p.id === it.fromPlace) : null;
+          const dragging = draggingId === it.id;
           return (
-          <SwipeRow key={it.id} onDelete={() => del(it.id)} label={it.title}>
+          <div key={it.id} ref={(el) => { rowRefs.current[it.id] = el; }}
+            style={{ opacity: dragging ? .55 : 1, transition: dragging ? "none" : "opacity 160ms var(--ease)" }}>
+          <SwipeRow onDelete={() => del(it.id)} label={it.title}>
           <div className="np-card np-pop" style={{ borderRadius: 32, padding: 14 }}>
             <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -515,9 +564,14 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
                     venue and end time); it's fixed copy, not an editable note. */}
                 {it.note && <div style={{ fontSize: 14.9, color: "var(--dim)", lineHeight: 1.5, marginTop: 9 }}>{it.note}</div>}
               </div>
+              <button onPointerDown={(e) => dragStart(e, it)} aria-label={`Reorder ${it.title}`}
+                style={{ ...ghost, alignSelf: "center", flexShrink: 0, width: 34, height: 34, color: "var(--dim)", touchAction: "none", cursor: dragging ? "grabbing" : "grab" }}>
+                <Ico n="grip" s={20} c="currentColor" w={0} />
+              </button>
             </div>
           </div>
-          </SwipeRow>);
+          </SwipeRow>
+          </div>);
         })}
         </div>}
       <div className="np-card" style={{ borderRadius: 28, padding: 10, marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
