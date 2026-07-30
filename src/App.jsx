@@ -92,9 +92,6 @@ function Ico({ n, s = 16, c = "currentColor", w = 2, fill = "none" }) {
 
 // ---- helpers --------------------------------------------------------------
 const uid = () => Math.random().toString(36).slice(2, 9);
-// What a starred act reads as once it lands in Plans — the stage matters more
-// than the venue here, since every set is at the same Fort Adams address.
-const planTitle = (a) => a.stage ? `${a.artist} — ${a.stage}` : a.artist;
 // Every stored time is 24h "HH:MM" (native <input type="time"> values); this is
 // only for the plain-text renders — the inputs themselves already show
 // AM/PM per the browser's own locale formatting.
@@ -213,14 +210,20 @@ const DEFAULT = {
   name: "Newport Jazz Fest Trip", destination: "Newport, RI",
   homeBase: "",
   startDate: "2026-07-30", endDate: "2026-08-02",
-  days: {}, places: [], lineup: [], seededLineup: false, lineupVersion: 0, datesVersion: 0,
+  days: {}, places: [], lineup: [], seededLineup: false, lineupVersion: 0, datesVersion: 0, plansVersion: 0,
 };
+// Plans stays free of individual sets — Lineup is the record of who's playing
+// when. Instead, each festival day gets one fixed block for the day at Fort
+// Adams: noon (gates/first sets) to 9pm.
+const PLANS_VERSION = 1;
+const FEST_BLOCKS = [
+  { date: "2026-07-31", time: "12:00", title: "Newport Jazz Fest", note: "Fort Adams State Park — ends 9:00 PM" },
+  { date: "2026-08-01", time: "12:00", title: "Newport Jazz Fest", note: "Fort Adams State Park — ends 9:00 PM" },
+];
 const PLACE_CATS = ["Beach", "Eat", "See", "Do", "Sail", "Historic", "Nature", "Shop", "Sweet", "Music", "Scenic"];
 // Muted, "chill" hues per category — colorful without being neon-bright.
 const TAG_COLOR = { Beach: "#5B95B0", Eat: "#C1785A", See: "#6E8FB3", Do: "#B98F5E", Sail: "#4FA093", Historic: "#B99A5B", Nature: "#7BA070", Shop: "#B0759B", Sweet: "#C17B94", Music: "#8B85BD", Scenic: "#6BA085" };
 const PLACES_VERSION = 3;
-
-
 
 export default function App() {
   const [trip, setTrip] = useState(DEFAULT);
@@ -243,22 +246,12 @@ export default function App() {
       t = { ...t, lineup: SEED_LINEUP.map((a) => ({ ...a, id: uid() })) };
       mutated = true;
     } else if ((t.lineupVersion || 0) < SEED_VERSION) {
-      // Newport published the real schedule — reseed, but carry over which acts
-      // were starred and rebuild their Plans entries against the new set times.
+      // Newport published the real schedule — reseed, carrying over which acts
+      // were starred. Plans is never touched by this; Lineup is the record of
+      // who's playing when.
       const wasStarred = new Set((t.lineup || []).filter((a) => a.starred).map((a) => a.artist));
       const lineup = SEED_LINEUP.map((s) => ({ ...s, id: uid(), starred: wasStarred.has(s.artist) }));
-      const dayKeys = dateList(t.startDate, t.endDate);
-      const daysObj = {};
-      Object.keys(t.days || {}).forEach((k) => {
-        daysObj[k] = (t.days[k] || []).filter((i) => !i.fromLineup);
-      });
-      lineup.forEach((a) => {
-        if (a.starred && a.date && dayKeys.includes(a.date)) {
-          const cur = daysObj[a.date] || [];
-          daysObj[a.date] = [...cur, { id: uid(), time: a.time || "", title: planTitle(a), fromLineup: a.id }];
-        }
-      });
-      t = { ...t, lineup, days: daysObj };
+      t = { ...t, lineup };
       mutated = true;
     }
     if (!t.seededLineup || (t.lineupVersion || 0) < SEED_VERSION) {
@@ -292,6 +285,22 @@ export default function App() {
         kingstonVersion: undefined,
         placesVersion: PLACES_VERSION,
       };
+      mutated = true;
+    }
+    if ((t.plansVersion || 0) < PLANS_VERSION) {
+      // Strip any set entries Plans picked up from starring before sets were
+      // taken out of Plans entirely, then seed the two fixed festival blocks.
+      const daysObj = {};
+      Object.keys(t.days || {}).forEach((k) => {
+        daysObj[k] = (t.days[k] || []).filter((i) => !i.fromLineup);
+      });
+      FEST_BLOCKS.forEach((b) => {
+        const cur = daysObj[b.date] || [];
+        if (!cur.some((i) => i.title === b.title)) {
+          daysObj[b.date] = [...cur, { id: uid(), time: b.time, title: b.title, note: b.note }];
+        }
+      });
+      t = { ...t, days: daysObj, plansVersion: PLANS_VERSION };
       mutated = true;
     }
     if (mutated) {
@@ -462,13 +471,7 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save, gotoHeader }) {
     save({ ...trip, days: { ...trip.days, [activeDay]: [...(trip.days[activeDay] || []), { id: uid(), time: allDay ? "" : time, title: title.trim() }] } });
     setTitle("");
   };
-  const del = (id) => {
-    const item = (trip.days[activeDay] || []).find((i) => i.id === id);
-    const lineup = item && item.fromLineup
-      ? trip.lineup.map((a) => a.id === item.fromLineup ? { ...a, starred: false } : a)
-      : trip.lineup;
-    save({ ...trip, lineup, days: { ...trip.days, [activeDay]: (trip.days[activeDay] || []).filter((i) => i.id !== id) } });
-  };
+  const del = (id) => save({ ...trip, days: { ...trip.days, [activeDay]: (trip.days[activeDay] || []).filter((i) => i.id !== id) } });
   const update = (id, patch) => save({ ...trip, days: { ...trip.days, [activeDay]: (trip.days[activeDay] || []).map((i) => i.id === id ? { ...i, ...patch } : i) } });
 
   return (
@@ -490,33 +493,28 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save, gotoHeader }) {
         : <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{items.map((it) => {
           const editing = editId === it.id;
           const dirOpen = openDirId === it.id;
-          // A plan item that came from Spots or Lineup carries the full source
-          // record, so it renders with the same info as its home tab — category
-          // or stage, summary, and directions — not just a bare title.
+          // A plan item added from Spots carries the full source record, so it
+          // renders with the same info as its Spots card — category, summary,
+          // and directions — not just a bare title. Sets never land here; the
+          // Lineup tab is the only place they show up.
           const sourcePlace = it.fromPlace ? trip.places.find((p) => p.id === it.fromPlace) : null;
-          const sourceAct = it.fromLineup ? trip.lineup.find((a) => a.id === it.fromLineup) : null;
-          const mapTarget = sourcePlace
-            ? `${sourcePlace.name} ${sourcePlace.near || trip.destination || ""}`
-            : sourceAct
-              ? `${sourceAct.venue || FEST_VENUE} ${trip.destination || ""}`
-              : null;
+          const mapTarget = sourcePlace ? `${sourcePlace.name} ${sourcePlace.near || trip.destination || ""}` : null;
           return (
           <div key={it.id} className="np-card np-pop" style={{ borderRadius: 32, overflow: "hidden", padding: 0 }}>
             <div style={{ display: "flex", alignItems: "stretch" }}>
               <button onClick={() => setEditId(editing ? null : it.id)} aria-label="Edit time"
                 style={{ flexShrink: 0, width: 68, border: "none", borderRight: "1.5px dashed var(--glass-line)", background: "rgba(255,255,255,.06)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "14px 6px" }}>
-                <Ico n={it.fromLineup ? "music" : it.time ? "cal" : "sun"} s={11} c="var(--shout)" />
+                <Ico n={it.time ? "cal" : "sun"} s={11} c="var(--shout)" />
                 {it.time
                   ? <span className="np-mono" style={{ fontSize: 12.5, fontWeight: 700, color: "var(--white)", letterSpacing: ".01em", textAlign: "center", lineHeight: 1.2 }}>{fmt12(it.time)}</span>
                   : <span className="np-mono" style={{ fontSize: 9.5, fontWeight: 700, color: "var(--dim)", letterSpacing: ".06em", textTransform: "uppercase", lineHeight: 1.25 }}>Any<br />time</span>}
               </button>
               <div style={{ flex: 1, minWidth: 0, padding: "12px 10px 12px 14px", display: "flex", alignItems: "flex-start", gap: 6 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  {/* A sourced item (from Spots or Lineup) gets that card's own title
-                      size and badge, so it reads as the exact same card, not a summary
-                      of it. A hand-typed item stays smaller — it's a quick note, not a
-                      saved place. */}
-                  <div style={{ fontSize: sourcePlace || sourceAct ? 18.5 : 15, fontWeight: sourcePlace || sourceAct ? 700 : 600, lineHeight: 1.2 }}>{it.title}</div>
+                  {/* A sourced item (from Spots) gets that card's own title size and
+                      badge, so it reads as the exact same card, not a summary of it.
+                      A hand-typed item stays smaller — it's a quick note. */}
+                  <div style={{ fontSize: sourcePlace ? 18.5 : 15, fontWeight: sourcePlace ? 700 : 600, lineHeight: 1.2 }}>{it.title}</div>
 
                   {sourcePlace && (
                     <>
@@ -531,13 +529,6 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save, gotoHeader }) {
                         </a>
                       )}
                     </>
-                  )}
-
-                  {sourceAct && (
-                    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 7, marginTop: 7 }}>
-                      {sourceAct.stage ? <Pill label={sourceAct.stage.replace(" Stage", "")} color={STAGE_COLOR[sourceAct.stage]} /> : <DashedPill label="Stage TBA" />}
-                      {sourceAct.endTime && <span className="np-mono" style={{ fontSize: 11, color: "var(--dim)" }}>ends {fmt12(sourceAct.endTime)}</span>}
-                    </div>
                   )}
 
                   {it.note && !editing && <div style={{ fontSize: 12.5, color: "var(--dim)", lineHeight: 1.45, marginTop: 8, whiteSpace: "pre-wrap" }}>{it.note}</div>}
@@ -602,23 +593,10 @@ function Lineup({ trip, days, save }) {
     save({ ...trip, lineup: [...trip.lineup, { id: uid(), artist: artist.trim(), stage, venue: FEST_VENUE, date, time, endTime: "", starred: false }] });
     setArtist("");
   };
+  // Starring only flags the act itself — Lineup is the record of sets, Plans
+  // stays free of individual set entries.
   const star = (id) => {
-    const act = trip.lineup.find((a) => a.id === id);
-    if (!act) return;
-    const nowStar = !act.starred;
-    const lineup = trip.lineup.map((a) => a.id === id ? { ...a, starred: nowStar } : a);
-    let daysObj = trip.days;
-    if (act.date) {
-      const cur = daysObj[act.date] || [];
-      if (nowStar) {
-        if (days.includes(act.date) && !cur.some((i) => i.fromLineup === act.id)) {
-          daysObj = { ...daysObj, [act.date]: [...cur, { id: uid(), time: act.time || "", title: planTitle(act), fromLineup: act.id }] };
-        }
-      } else if (cur.some((i) => i.fromLineup === act.id)) {
-        daysObj = { ...daysObj, [act.date]: cur.filter((i) => i.fromLineup !== act.id) };
-      }
-    }
-    save({ ...trip, lineup, days: daysObj });
+    save({ ...trip, lineup: trip.lineup.map((a) => a.id === id ? { ...a, starred: !a.starred } : a) });
   };
   const del = (id) => save({ ...trip, lineup: trip.lineup.filter((a) => a.id !== id) });
 
