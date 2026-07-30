@@ -471,7 +471,7 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
 
   return (
     <>
-      <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, marginBottom: 16 }}>
+      <div style={{ display: "flex", gap: 8, justifyContent: "center", overflowX: "auto", paddingBottom: 4, marginBottom: 16 }}>
         {days.map((iso) => {
           const c = fmtChip(iso); const on = iso === activeDay; const n = (trip.days[iso] || []).length;
           return (
