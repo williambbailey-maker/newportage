@@ -213,12 +213,12 @@ const DEFAULT = {
   days: {}, places: [], lineup: [], seededLineup: false, lineupVersion: 0, datesVersion: 0, plansVersion: 0,
 };
 // Plans stays free of individual sets — Lineup is the record of who's playing
-// when. Instead, each festival day gets one fixed block for the day at Fort
-// Adams: noon (gates/first sets) to 9pm.
-const PLANS_VERSION = 1;
+// when. Instead, each festival day gets one standing block. Plans items carry
+// no time of their own, so the hours live in the block's detail line.
+const PLANS_VERSION = 2;
 const FEST_BLOCKS = [
-  { date: "2026-07-31", time: "12:00", title: "Newport Jazz Fest", note: "Fort Adams State Park — ends 9:00 PM" },
-  { date: "2026-08-01", time: "12:00", title: "Newport Jazz Fest", note: "Fort Adams State Park — ends 9:00 PM" },
+  { date: "2026-07-31", title: "Newport Jazz Fest", note: "Fort Adams State Park · 12:00 PM – 9:00 PM" },
+  { date: "2026-08-01", title: "Newport Jazz Fest", note: "Fort Adams State Park · 12:00 PM – 9:00 PM" },
 ];
 const PLACE_CATS = ["Beach", "Eat", "See", "Do", "Sail", "Historic", "Nature", "Shop", "Sweet", "Music", "Scenic"];
 // Muted, "chill" hues per category — colorful without being neon-bright.
@@ -229,7 +229,6 @@ export default function App() {
   const [trip, setTrip] = useState(DEFAULT);
   const [tab, setTab] = useState("itinerary");
   const [activeDay, setActiveDay] = useState(null);
-  const [editHeader, setEditHeader] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const saveTimer = useRef(null);
 
@@ -288,17 +287,17 @@ export default function App() {
       mutated = true;
     }
     if ((t.plansVersion || 0) < PLANS_VERSION) {
-      // Strip any set entries Plans picked up from starring before sets were
-      // taken out of Plans entirely, then seed the two fixed festival blocks.
+      // Plans items no longer carry a time or a note. Drop any set entries a
+      // prior install picked up from starring, strip stored times and free-text
+      // notes, then (re)seed the standing festival blocks.
       const daysObj = {};
       Object.keys(t.days || {}).forEach((k) => {
-        daysObj[k] = (t.days[k] || []).filter((i) => !i.fromLineup);
+        daysObj[k] = (t.days[k] || [])
+          .filter((i) => !i.fromLineup && i.title !== "Newport Jazz Fest")
+          .map(({ time, note, ...rest }) => rest);
       });
       FEST_BLOCKS.forEach((b) => {
-        const cur = daysObj[b.date] || [];
-        if (!cur.some((i) => i.title === b.title)) {
-          daysObj[b.date] = [...cur, { id: uid(), time: b.time, title: b.title, note: b.note }];
-        }
+        daysObj[b.date] = [...(daysObj[b.date] || []), { id: uid(), title: b.title, note: b.note }];
       });
       t = { ...t, days: daysObj, plansVersion: PLANS_VERSION };
       mutated = true;
@@ -343,9 +342,7 @@ export default function App() {
     <div className="np-app">
       <style>{STYLE}</style>
       <div className="np-col">
-        <Header trip={trip} countdown={countdown} editing={editHeader}
-          onEdit={() => setEditHeader(true)} onClose={() => setEditHeader(false)}
-          onSave={(p) => { save({ ...trip, ...p }); setEditHeader(false); }} />
+        <Header trip={trip} countdown={countdown} />
 
         <div className="np-card" style={{ display: "flex", gap: 4, padding: 5, borderRadius: 999, marginTop: 20, position: "sticky", top: 10, zIndex: 5 }}>
           {TABS.map(([id, icon, label]) => (
@@ -357,7 +354,7 @@ export default function App() {
         </div>
 
         <div style={{ marginTop: 20 }} key={tab} className="np-pop">
-          {tab === "itinerary" && <Itinerary trip={trip} days={days} activeDay={activeDay} setActiveDay={setActiveDay} save={save} gotoHeader={() => setEditHeader(true)} />}
+          {tab === "itinerary" && <Itinerary trip={trip} days={days} activeDay={activeDay} setActiveDay={setActiveDay} save={save} />}
           {tab === "lineup" && <Lineup trip={trip} days={days} save={save} />}
           {tab === "places" && <Places trip={trip} days={days} save={save} />}
         </div>
@@ -379,100 +376,64 @@ export default function App() {
 }
 
 // ---- Header ---------------------------------------------------------------
-function Header({ trip, countdown, editing, onEdit, onClose, onSave }) {
-  const [f, setF] = useState(pick(trip));
-  useEffect(() => { setF(pick(trip)); }, [editing]); // eslint-disable-line
-  function pick(t) { return { name: t.name, destination: t.destination, homeBase: t.homeBase, startDate: t.startDate, endDate: t.endDate }; }
+// Display only — trip details aren't editable from the app.
+function Header({ trip, countdown }) {
   const range = trip.startDate && trip.endDate
     ? `${fmtChip(trip.startDate).mo} ${fmtChip(trip.startDate).day} – ${fmtChip(trip.endDate).mo} ${fmtChip(trip.endDate).day}`
     : "Dates not set";
 
-  // No hero, no card — this just flows as plain content at the top of the page,
-  // like the rest of the column.
   return (
     <div style={{ marginTop: 2 }}>
-      {!editing ? (
-        <>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <span className="np-eyebrow" style={{ color: "var(--shout)" }}>{trip.destination || "Newport, RI"}</span>
-            <button onClick={onEdit} aria-label="Edit trip" style={{ ...ghost, flexShrink: 0, marginTop: 2 }}>
-              <Ico n="pencil" s={16} c="var(--dim)" w={2.4} />
-            </button>
-          </div>
+      <span className="np-eyebrow" style={{ color: "var(--shout)" }}>{trip.destination || "Newport, RI"}</span>
 
-          <h1 style={{ fontSize: 32, fontWeight: 800, letterSpacing: "-.02em", lineHeight: 1.08, margin: "8px 0 0" }}>
-            {trip.name || "Untitled Trip"}
-          </h1>
+      <h1 style={{ fontSize: 32, fontWeight: 800, letterSpacing: "-.02em", lineHeight: 1.08, margin: "8px 0 0" }}>
+        {trip.name || "Untitled Trip"}
+      </h1>
 
-          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, marginTop: 16 }}>
-            <div>
-              <div className="np-label" style={{ color: "var(--dim)" }}>Dates</div>
-              <div style={{ fontSize: 15, fontWeight: 700, marginTop: 4, letterSpacing: "-.01em" }}>{range}</div>
-            </div>
-            {countdown !== null && (
-              <div style={{ textAlign: "right", flexShrink: 0 }}>
-                <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: "-.02em", color: countdown >= 0 ? "var(--shout)" : "var(--dim)" }}>
-                  {countdown > 0 ? countdown : countdown === 0 ? "Today" : "—"}
-                </div>
-                <div className="np-label" style={{ color: "var(--dim)", marginTop: 2 }}>
-                  {countdown > 1 ? "days to go" : countdown === 1 ? "day to go" : countdown === 0 ? "you're off" : "in progress"}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {trip.homeBase && (
-            <a href={`https://www.google.com/maps/search/?api=1&query=${enc(trip.homeBase)}`} target="_blank" rel="noopener noreferrer"
-              className="np-label"
-              style={{ display: "inline-flex", alignItems: "center", gap: 7, marginTop: 14, color: "var(--shout)", textDecoration: "none", border: "1px solid var(--glass-line)", borderRadius: 999, padding: "9px 15px", background: "var(--glass)" }}>
-              <Ico n="home" s={13} c="var(--shout)" w={2.4} />{trip.homeBase}
-            </a>
-          )}
-        </>
-      ) : (
-        <div className="np-pop" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span className="np-label" style={{ color: "var(--dim)" }}>Edit trip</span>
-            <button onClick={onClose} aria-label="Close" style={ghost}>
-              <Ico n="x" s={18} c="var(--dim)" w={2.4} />
-            </button>
-          </div>
-          <Field label="Trip name"><input className="np-in" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} style={inStyle} /></Field>
-          <Field label="Destination"><input className="np-in" value={f.destination} onChange={(e) => setF({ ...f, destination: e.target.value })} style={inStyle} placeholder="Newport, RI" /></Field>
-          <Field label="Home base"><input className="np-in" value={f.homeBase} onChange={(e) => setF({ ...f, homeBase: e.target.value })} style={inStyle} placeholder="Hotel / address" /></Field>
-          <div style={{ display: "flex", gap: 10 }}>
-            <Field label="Start"><input type="date" className="np-in np-mono" value={f.startDate} onChange={(e) => setF({ ...f, startDate: e.target.value })} style={{ ...inStyle, fontSize: 13 }} /></Field>
-            <Field label="End"><input type="date" className="np-in np-mono" value={f.endDate} min={f.startDate} onChange={(e) => setF({ ...f, endDate: e.target.value })} style={{ ...inStyle, fontSize: 13 }} /></Field>
-          </div>
-          <button onClick={() => onSave(f)} className="np-label"
-            style={{ marginTop: 4, background: "var(--shout)", color: "var(--ink)", border: "none", borderRadius: 999, padding: "15px 0", cursor: "pointer" }}>
-            Save trip
-          </button>
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, marginTop: 16 }}>
+        <div>
+          <div className="np-label" style={{ color: "var(--dim)" }}>Dates</div>
+          <div style={{ fontSize: 15, fontWeight: 700, marginTop: 4, letterSpacing: "-.01em" }}>{range}</div>
         </div>
+        {countdown !== null && (
+          <div style={{ textAlign: "right", flexShrink: 0 }}>
+            <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: "-.02em", color: countdown >= 0 ? "var(--shout)" : "var(--dim)" }}>
+              {countdown > 0 ? countdown : countdown === 0 ? "Today" : "—"}
+            </div>
+            <div className="np-label" style={{ color: "var(--dim)", marginTop: 2 }}>
+              {countdown > 1 ? "days to go" : countdown === 1 ? "day to go" : countdown === 0 ? "you're off" : "in progress"}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {trip.homeBase && (
+        <a href={`https://www.google.com/maps/search/?api=1&query=${enc(trip.homeBase)}`} target="_blank" rel="noopener noreferrer"
+          className="np-label"
+          style={{ display: "inline-flex", alignItems: "center", gap: 7, marginTop: 14, color: "var(--shout)", textDecoration: "none", border: "1px solid var(--glass-line)", borderRadius: 999, padding: "9px 15px", background: "var(--glass)" }}>
+          <Ico n="home" s={13} c="var(--shout)" w={2.4} />{trip.homeBase}
+        </a>
       )}
     </div>
   );
 }
 
 // ---- Itinerary --------------------------------------------------------------
-function Itinerary({ trip, days, activeDay, setActiveDay, save, gotoHeader }) {
-  const [time, setTime] = useState("09:00");
-  const [allDay, setAllDay] = useState(false);
+// Plans is an unordered per-day list — no times, no editing, no notes. Each
+// item shows what it is, and a map button when there's somewhere to route to.
+function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
   const [title, setTitle] = useState("");
-  const [editId, setEditId] = useState(null);
   const [openDirId, setOpenDirId] = useState(null);
   if (!days.length)
-    return <Empty icon="cal" title="Set your dates first" sub="Add a start and end date and your trip days appear here, ready to fill." action="Add travel dates" onAction={gotoHeader} />;
+    return <Empty icon="cal" title="No trip days" sub="The trip runs Jul 30 – Aug 2." compact />;
 
-  // Untimed ("any time") items float to the top of the day, ahead of the schedule.
-  const items = (trip.days[activeDay] || []).slice().sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+  const items = trip.days[activeDay] || [];
   const add = () => {
     if (!title.trim()) return;
-    save({ ...trip, days: { ...trip.days, [activeDay]: [...(trip.days[activeDay] || []), { id: uid(), time: allDay ? "" : time, title: title.trim() }] } });
+    save({ ...trip, days: { ...trip.days, [activeDay]: [...items, { id: uid(), title: title.trim() }] } });
     setTitle("");
   };
-  const del = (id) => save({ ...trip, days: { ...trip.days, [activeDay]: (trip.days[activeDay] || []).filter((i) => i.id !== id) } });
-  const update = (id, patch) => save({ ...trip, days: { ...trip.days, [activeDay]: (trip.days[activeDay] || []).map((i) => i.id === id ? { ...i, ...patch } : i) } });
+  const del = (id) => save({ ...trip, days: { ...trip.days, [activeDay]: items.filter((i) => i.id !== id) } });
 
   return (
     <>
@@ -489,90 +450,52 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save, gotoHeader }) {
         })}
       </div>
       {items.length === 0
-        ? <Empty icon="nav" title="Nothing planned yet" sub="Add a set, a beach block, dinner — with a time, or any-time for loose ideas." compact />
+        ? <Empty icon="nav" title="Nothing planned yet" sub="Add a beach block, dinner, a drive — anything you want on this day." compact />
         : <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{items.map((it) => {
-          const editing = editId === it.id;
           const dirOpen = openDirId === it.id;
-          // A plan item added from Spots carries the full source record, so it
-          // renders with the same info as its Spots card — category, summary,
-          // and directions — not just a bare title. Sets never land here; the
-          // Lineup tab is the only place they show up.
+          // An item added from Spots carries its source record, so it renders with
+          // the same info as its Spots card — category, summary, directions.
           const sourcePlace = it.fromPlace ? trip.places.find((p) => p.id === it.fromPlace) : null;
           const mapTarget = sourcePlace ? `${sourcePlace.name} ${sourcePlace.near || trip.destination || ""}` : null;
           return (
-          <div key={it.id} className="np-card np-pop" style={{ borderRadius: 32, overflow: "hidden", padding: 0 }}>
-            <div style={{ display: "flex", alignItems: "stretch" }}>
-              <button onClick={() => setEditId(editing ? null : it.id)} aria-label="Edit time"
-                style={{ flexShrink: 0, width: 68, border: "none", borderRight: "1.5px dashed var(--glass-line)", background: "rgba(255,255,255,.06)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "14px 6px" }}>
-                <Ico n={it.time ? "cal" : "sun"} s={11} c="var(--shout)" />
-                {it.time
-                  ? <span className="np-mono" style={{ fontSize: 12.5, fontWeight: 700, color: "var(--white)", letterSpacing: ".01em", textAlign: "center", lineHeight: 1.2 }}>{fmt12(it.time)}</span>
-                  : <span className="np-mono" style={{ fontSize: 9.5, fontWeight: 700, color: "var(--dim)", letterSpacing: ".06em", textTransform: "uppercase", lineHeight: 1.25 }}>Any<br />time</span>}
-              </button>
-              <div style={{ flex: 1, minWidth: 0, padding: "12px 10px 12px 14px", display: "flex", alignItems: "flex-start", gap: 6 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  {/* A sourced item (from Spots) gets that card's own title size and
-                      badge, so it reads as the exact same card, not a summary of it.
-                      A hand-typed item stays smaller — it's a quick note. */}
-                  <div style={{ fontSize: sourcePlace ? 18.5 : 15, fontWeight: sourcePlace ? 700 : 600, lineHeight: 1.2 }}>{it.title}</div>
+          <div key={it.id} className="np-card np-pop" style={{ borderRadius: 32, padding: 14 }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 18.5, fontWeight: 700, lineHeight: 1.2 }}>{it.title}</div>
 
-                  {sourcePlace && (
-                    <>
-                      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 7, marginTop: 7 }}>
-                        <Pill label={sourcePlace.category} color={TAG_COLOR[sourcePlace.category]} />
-                        {sourcePlace.near && <span className="np-mono" style={{ fontSize: 11, color: "var(--dim)" }}>{sourcePlace.near}</span>}
-                      </div>
-                      {sourcePlace.summary && <div style={{ fontSize: 13.5, color: "var(--dim)", lineHeight: 1.5, marginTop: 9 }}>{sourcePlace.summary}</div>}
-                      {sourcePlace.url && (
-                        <a href={sourcePlace.url} target="_blank" rel="noopener noreferrer" className="np-mono" style={{ display: "flex", width: "fit-content", alignItems: "center", gap: 4, marginTop: 8, fontSize: 11.9, fontWeight: 600, color: "var(--shout)", textDecoration: "none", letterSpacing: ".03em", textTransform: "uppercase" }}>
-                          More info ↗
-                        </a>
-                      )}
-                    </>
-                  )}
+                {sourcePlace && (
+                  <>
+                    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 7, marginTop: 7 }}>
+                      <Pill label={sourcePlace.category} color={TAG_COLOR[sourcePlace.category]} />
+                      {sourcePlace.near && <span className="np-mono" style={{ fontSize: 11, color: "var(--dim)" }}>{sourcePlace.near}</span>}
+                    </div>
+                    {sourcePlace.summary && <div style={{ fontSize: 13.5, color: "var(--dim)", lineHeight: 1.5, marginTop: 9 }}>{sourcePlace.summary}</div>}
+                    {sourcePlace.url && (
+                      <a href={sourcePlace.url} target="_blank" rel="noopener noreferrer" className="np-mono" style={{ display: "flex", width: "fit-content", alignItems: "center", gap: 4, marginTop: 8, fontSize: 11.9, fontWeight: 600, color: "var(--shout)", textDecoration: "none", letterSpacing: ".03em", textTransform: "uppercase" }}>
+                        More info ↗
+                      </a>
+                    )}
+                  </>
+                )}
 
-                  {it.note && !editing && <div style={{ fontSize: 12.5, color: "var(--dim)", lineHeight: 1.45, marginTop: 8, whiteSpace: "pre-wrap" }}>{it.note}</div>}
-                  {!it.note && !editing && <button onClick={() => setEditId(it.id)} className="np-mono" style={{ marginTop: 8, background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 10.5, fontWeight: 600, letterSpacing: ".05em", textTransform: "uppercase", color: "var(--shout)" }}>+ Add note</button>}
-                </div>
-                <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                  <button onClick={() => setEditId(editing ? null : it.id)} aria-label="Edit" style={{ ...iconBtn, width: 38, height: 38, background: editing ? "var(--shout)" : "rgba(255,255,255,.06)" }}><Ico n="pencil" s={15} c={editing ? "var(--ink)" : "var(--white)"} /></button>
-                  {mapTarget && (
-                    <button onClick={() => setOpenDirId(dirOpen ? null : it.id)} aria-label="Directions" style={{ ...iconBtn, width: 38, height: 38, background: dirOpen ? "var(--shout)" : "rgba(255,255,255,.06)" }}><Ico n="route" s={16} c={dirOpen ? "var(--ink)" : "var(--white)"} /></button>
-                  )}
-                  <button onClick={() => del(it.id)} aria-label="Remove" style={ghost}><Ico n="trash" s={15} /></button>
-                </div>
+                {/* Seeded blocks carry their own standing detail (e.g. the fest
+                    venue and end time); it's fixed copy, not an editable note. */}
+                {it.note && <div style={{ fontSize: 13.5, color: "var(--dim)", lineHeight: 1.5, marginTop: 9 }}>{it.note}</div>}
+              </div>
+              <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                {mapTarget && (
+                  <button onClick={() => setOpenDirId(dirOpen ? null : it.id)} aria-label="Directions" style={{ ...iconBtn, width: 38, height: 38, background: dirOpen ? "var(--shout)" : "rgba(255,255,255,.06)" }}><Ico n="route" s={16} c={dirOpen ? "var(--ink)" : "var(--white)"} /></button>
+                )}
+                <button onClick={() => del(it.id)} aria-label="Remove" style={ghost}><Ico n="trash" s={15} /></button>
               </div>
             </div>
-            {editing && (
-              <div className="np-pop" style={{ borderTop: "1.5px dashed var(--glass-line)", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                  <span className="np-mono" style={{ fontSize: 10, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--dim)" }}>Time</span>
-                  <input type="time" value={it.time || ""} onChange={(e) => update(it.id, { time: e.target.value })} disabled={!it.time} className="np-in np-mono" style={{ ...inStyle, width: 138, fontSize: 13, padding: "11px 14px", opacity: it.time ? 1 : .45 }} />
-                  <button onClick={() => update(it.id, { time: it.time ? "" : "12:00" })} className="np-mono"
-                    style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", padding: "8px 11px", borderRadius: 999, cursor: "pointer", border: `1px solid ${!it.time ? "var(--shout)" : "var(--glass-line)"}`, background: !it.time ? "var(--shout)" : "transparent", color: !it.time ? "var(--ink)" : "var(--dim)" }}>
-                    Any time
-                  </button>
-                </div>
-                <textarea value={it.note || ""} onChange={(e) => update(it.id, { note: e.target.value })} placeholder="Add a note — confirmation #, who's coming, what to bring…" rows={3} className="np-in" style={{ ...inStyle, resize: "vertical", lineHeight: 1.45, minHeight: 64 }} />
-                <button onClick={() => setEditId(null)} className="np-mono" style={{ alignSelf: "flex-start", background: "var(--shout)", color: "var(--ink)", border: "none", borderRadius: 999, padding: "8px 18px", fontSize: 12, fontWeight: 600, cursor: "pointer", letterSpacing: ".01em" }}>Done</button>
-              </div>
-            )}
-            {dirOpen && mapTarget && <div style={{ padding: "0 14px 14px" }}><MapPanel from={trip.homeBase} to={mapTarget} /></div>}
+            {dirOpen && mapTarget && <MapPanel from={trip.homeBase} to={mapTarget} />}
           </div>);
         })}
         </div>}
-      <div className="np-card" style={{ borderRadius: 28, padding: 10, marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} disabled={allDay} className="np-in np-mono" style={{ ...inStyle, width: 132, fontSize: 12.5, padding: "11px 14px", opacity: allDay ? .45 : 1 }} />
-          <button onClick={() => setAllDay((v) => !v)} aria-pressed={allDay} className="np-mono"
-            style={{ flex: 1, fontSize: 10.5, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", padding: "10px 8px", borderRadius: 999, cursor: "pointer", border: `1px solid ${allDay ? "var(--shout)" : "var(--glass-line)"}`, background: allDay ? "var(--shout)" : "transparent", color: allDay ? "var(--ink)" : "var(--dim)" }}>
-            Any time
-          </button>
-        </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} placeholder="Add a plan…" className="np-in" style={{ ...inStyle, flex: 1 }} />
-          <button onClick={add} aria-label="Add plan" style={addBtn}><Ico n="plus" s={18} c="#fff" /></button>
-        </div>
+      <div className="np-card" style={{ borderRadius: 28, padding: 10, marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
+        <input value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} placeholder="Add a plan…" className="np-in" style={{ ...inStyle, flex: 1 }} />
+        <button onClick={add} aria-label="Add plan" style={addBtn}><Ico n="plus" s={18} c="var(--ink)" /></button>
       </div>
     </>
   );
@@ -990,14 +913,6 @@ function DataTools({ trip, save }) {
   );
 }
 
-function Field({ label, children }) {
-  return (
-    <label style={{ flex: 1, display: "block" }}>
-      <span className="np-label" style={{ color: "rgba(255,255,255,.45)", display: "block", marginBottom: 7, paddingLeft: 4 }}>{label}</span>
-      {children}
-    </label>
-  );
-}
 function Empty({ icon, title, sub, action, onAction, compact }) {
   return (
     <div className="np-card np-pop" style={{ padding: compact ? "34px 24px" : "48px 26px", textAlign: "center", margin: compact ? "4px 0 16px" : "8px 0" }}>
