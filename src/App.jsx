@@ -304,7 +304,7 @@ const PLACES_VERSION = 3;
 // never resurrects a spot you already scheduled or deleted. "More info" points
 // at a Maps search rather than a homepage — for a trip that's the more useful
 // link (hours, phone, directions, reviews) and it can't rot.
-const SPOTS_VERSION = 2;
+const SPOTS_VERSION = 3;
 const mapsUrl = (q) => `https://www.google.com/maps/search/?api=1&query=${enc(q)}`;
 const spot = (id, category, name, near, summary) =>
   ({ id: `place-${id}`, category, name, near, summary, url: mapsUrl(`${name} ${near}`) });
@@ -379,6 +379,8 @@ const SPOTS_SEED = [
     "Halfway point between Newport and North Kingstown — deli-style breakfast sandwiches with a harbor view."),
   spot("wickford-on-the-water", "Food", "Wickford on the Water", "85 Brown St, North Kingstown, RI",
     "Family-run waterfront kitchen on Wickford Cove, serving breakfast through dinner. Multiple patios and decks looking out over the harbor."),
+  spot("newport-sandwich-co", "Food", "Newport Sandwich Co.", "469 Thames St, Newport, RI",
+    "Sandwich counter on Thames St — an easy grab-and-go lunch before heading out to Fort Adams. Closes at 4pm, and shut on Tuesdays."),
 ];
 
 export default function App() {
