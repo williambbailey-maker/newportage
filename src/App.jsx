@@ -609,10 +609,14 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
   const [title, setTitle] = useState("");
   const [expanded, setExpanded] = useState(() => new Set()); // ids showing their full detail
   const [menuFor, setMenuFor] = useState(null); // id whose move/delete menu is open
+  const [noteFor, setNoteFor] = useState(null); // id currently turned over to its note
   const toggleExpanded = (id) => setExpanded((cur) => {
     const next = new Set(cur);
-    if (next.has(id)) { next.delete(id); setMenuFor((m) => (m === id ? null : m)); }
-    else next.add(id);
+    if (next.has(id)) {
+      next.delete(id);
+      setMenuFor((m) => (m === id ? null : m));
+      setNoteFor((n) => (n === id ? null : n));
+    } else next.add(id);
     return next;
   });
 
@@ -626,6 +630,10 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
     setTitle("");
   };
   const del = (id) => save({ ...trip, days: { ...trip.days, [activeDay]: items.filter((i) => i.id !== id) } });
+  const setNote = (id, text) => save({
+    ...trip,
+    days: { ...trip.days, [activeDay]: items.map((i) => i.id === id ? { ...i, userNote: text } : i) },
+  });
   const moveTo = (it, iso) => {
     if (iso === activeDay) { setMenuFor(null); return; }
     save({ ...trip, days: { ...trip.days, [activeDay]: items.filter((i) => i.id !== it.id), [iso]: [...(trip.days[iso] || []), it] } });
@@ -663,18 +671,49 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
               check, so this stays swipeable from anywhere while a plain tap
               (no drag) still fires the click. Controls inside stop propagation
               so they don't collapse the card out from under themselves. */}
-          <div className="np-card np-pop" role="button" tabIndex={0}
-            onClick={() => toggleExpanded(it.id)}
-            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleExpanded(it.id); } }}
+          <FlipCard face={noteFor === it.id ? "note" : "front"}
+            className="np-card np-pop" role="button" tabIndex={0}
+            onClick={() => { if (noteFor !== it.id) toggleExpanded(it.id); }}
+            onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && noteFor !== it.id) { e.preventDefault(); toggleExpanded(it.id); } }}
             aria-expanded={open} aria-label={`${open ? "Collapse" : "Expand"} ${it.title}`}
             style={{ borderRadius: 32, padding: 14, cursor: "pointer", height: open ? "auto" : CARD_COLLAPSED_H, overflow: "hidden" }}>
+          {(shownFace) => shownFace === "note" ? (
+            /* Back of the card — the note pad. Nothing in here toggles the
+               card, so tapping around the textarea can't collapse it. */
+            <div onClick={(e) => e.stopPropagation()} style={{ cursor: "auto" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 10 }}>
+                <span className="np-mono" style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 11.9, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--gold)" }}>Note · {it.title}</span>
+                <button onClick={() => setNoteFor(null)} aria-label="Close note"
+                  style={{ ...ghost, flexShrink: 0, width: 30, height: 30, color: "var(--dim)" }}>
+                  <Ico n="x" s={16} c="currentColor" w={2.3} />
+                </button>
+              </div>
+              <textarea
+                value={it.userNote || ""}
+                onChange={(e) => setNote(it.id, e.target.value)}
+                placeholder="Reservation at 7, ask for the patio…"
+                rows={4}
+                style={{ display: "block", width: "100%", maxWidth: "100%", boxSizing: "border-box", resize: "none", background: "rgba(242,223,198,.06)", border: "1px solid var(--glass-line)", borderRadius: 18, padding: "11px 13px", color: "var(--white)", fontSize: 15, lineHeight: 1.5, fontFamily: "inherit", outline: "none" }}
+              />
+            </div>
+          ) : (
+            <>
             <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-              <div style={{ flex: 1, minWidth: 0, fontSize: 20.4, fontWeight: 700, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.title}</div>
+              <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 7 }}>
+                <span style={{ minWidth: 0, fontSize: 20.4, fontWeight: 700, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.title}</span>
+                {!open && it.userNote && <Ico n="pencil" s={13} c="var(--gold)" w={2.3} style={{ flexShrink: 0 }} />}
+              </div>
               {open && (
+                <>
+                <button onClick={(e) => { e.stopPropagation(); setNoteFor(it.id); }} aria-label={`Note on ${it.title}`}
+                  style={{ ...ghost, flexShrink: 0, width: 32, height: 32, color: it.userNote ? "var(--gold)" : "var(--dim)" }}>
+                  <Ico n="pencil" s={17} c="currentColor" w={2} />
+                </button>
                 <button onClick={(e) => { e.stopPropagation(); setMenuFor((m) => (m === it.id ? null : it.id)); }} aria-label="Reschedule or delete"
                   aria-expanded={menuOpen} style={{ ...ghost, flexShrink: 0, width: 32, height: 32, color: menuOpen ? "var(--shout)" : "var(--dim)" }}>
                   <Ico n="gear" s={18} c="currentColor" w={1.9} />
                 </button>
+                </>
               )}
             </div>
 
@@ -703,6 +742,14 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
                     venue and end time); it's fixed copy, not an editable note. */}
                 {it.note && <div style={{ fontSize: 14.9, color: "var(--dim)", lineHeight: 1.5, marginTop: sourcePlace ? 9 : 11 }}>{it.note}</div>}
 
+                {/* Your own note, readable without turning the card over. */}
+                {it.userNote && (
+                  <div onClick={(e) => { e.stopPropagation(); setNoteFor(it.id); }}
+                    style={{ marginTop: hasDetail ? 11 : 11, borderLeft: "2px solid var(--gold)", paddingLeft: 10, fontSize: 14.9, color: "var(--white)", lineHeight: 1.5, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+                    {it.userNote}
+                  </div>
+                )}
+
                 {menuOpen && (
                   <div style={{ marginTop: hasDetail ? 11 : 0, borderTop: hasDetail ? "1px solid var(--glass-line)" : "none", paddingTop: hasDetail ? 11 : 0 }}>
                     <div className="np-mono" style={{ fontSize: 11.9, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--dim)", marginBottom: 8 }}>Move to</div>
@@ -725,7 +772,9 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
                 )}
               </div>
             )}
-          </div>
+            </>
+          )}
+          </FlipCard>
           </SwipeRow>);
         })}
         </div>}
@@ -969,6 +1018,54 @@ function DashedPill({ label }) {
 // swipe snaps open to reveal a Delete button you then tap (so a brush past the
 // threshold can't destroy anything), and a long swipe past halfway deletes
 // outright. Pointer events cover both touch and mouse.
+// Turns a card over to show a different face. Only ONE face is ever mounted:
+// the card rotates edge-on, swaps its contents at 90° while it's invisible,
+// then rotates back. That's deliberate rather than the usual preserve-3d +
+// backface-visibility pair — .np-card is translucent glass over the page, so
+// holding both faces in a 3D stack lets the hidden one bleed through the
+// visible one. Rendering one face at a time makes that impossible.
+// `children` is a render function receiving the face currently mounted.
+const FLIP_MS = 170;
+function FlipCard({ face, children, ...rest }) {
+  const [shown, setShown] = useState(face);
+  const [deg, setDeg] = useState(0);
+  const [snap, setSnap] = useState(false); // true = reposition without animating
+  const first = useRef(true);
+
+  // Keyed on `face` alone. Depending on `shown` too would tear the animation
+  // down halfway: swapping it re-runs the effect, whose cleanup cancels the
+  // pending turn-back and strands the card edge-on.
+  useEffect(() => {
+    if (first.current) { first.current = false; return undefined; }
+    let cancelled = false, raf = 0;
+    setSnap(false);
+    setDeg(90);
+    const swap = setTimeout(() => {
+      if (cancelled) return;
+      setShown(face);
+      setSnap(true);
+      setDeg(-90);
+      raf = requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (cancelled) return;
+        setSnap(false);
+        setDeg(0);
+      }));
+    }, FLIP_MS);
+    return () => { cancelled = true; clearTimeout(swap); cancelAnimationFrame(raf); };
+  }, [face]);
+
+  return (
+    <div {...rest} style={{
+      ...rest.style,
+      transform: `perspective(1100px) rotateY(${deg}deg)`,
+      transition: snap ? "none" : `transform ${FLIP_MS}ms var(--ease)`,
+      willChange: "transform",
+    }}>
+      {children(shown)}
+    </div>
+  );
+}
+
 const SWIPE_REVEAL = 104;
 function SwipeRow({ children, onDelete, label = "item" }) {
   const [dx, setDx] = useState(0);
