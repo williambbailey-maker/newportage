@@ -304,7 +304,7 @@ const PLACES_VERSION = 3;
 // never resurrects a spot you already scheduled or deleted. "More info" points
 // at a Maps search rather than a homepage — for a trip that's the more useful
 // link (hours, phone, directions, reviews) and it can't rot.
-const SPOTS_VERSION = 3;
+const SPOTS_VERSION = 4;
 const mapsUrl = (q) => `https://www.google.com/maps/search/?api=1&query=${enc(q)}`;
 const spot = (id, category, name, near, summary) =>
   ({ id: `place-${id}`, category, name, near, summary, url: mapsUrl(`${name} ${near}`) });
@@ -351,6 +351,8 @@ const SPOTS_SEED = [
     "Working coastal farm dating to the 1750s, with a seasonal farmers market and bay views."),
   spot("jamestown-windmill", "Fun stuff", "Jamestown Windmill", "Jamestown, RI",
     "Restored 1787 smock windmill standing alone in an open field — a quick, photogenic stop on Conanicut Island."),
+  spot("jamestown-playground", "Fun stuff", "Jamestown Community Playground", "26 North Rd, Jamestown, RI",
+    "One of the largest playgrounds in the country built from recycled materials — zip line, platform swing, a tall lighthouse climber and a separate area for little kids. Parking behind the library next door."),
 
   // ---- Ice Cream ----
   spot("newport-creamery", "Ice Cream", "Newport Creamery", "Newport, RI",
@@ -375,8 +377,8 @@ const SPOTS_SEED = [
     "Old-school local institution serving classic American breakfast. Cozy and fast."),
   spot("jitters-cafe", "Food", "Jitters Cafe", "North Kingstown, RI",
     "Quick counter service with solid breakfast sandwiches. Opens at 6:30am."),
-  spot("east-ferry", "Food", "East Ferry Market & Deli", "Jamestown, RI",
-    "Halfway point between Newport and North Kingstown — deli-style breakfast sandwiches with a harbor view."),
+  spot("east-ferry", "Food", "East Ferry Market & Deli", "47 Conanicus Ave, Jamestown, RI",
+    "Halfway point between Newport and North Kingstown — deli sandwiches, baked goods and coffee, looking out over Narragansett Bay and the Newport bridge."),
   spot("wickford-on-the-water", "Food", "Wickford on the Water", "85 Brown St, North Kingstown, RI",
     "Family-run waterfront kitchen on Wickford Cove, serving breakfast through dinner. Multiple patios and decks looking out over the harbor."),
   spot("newport-sandwich-co", "Food", "Newport Sandwich Co.", "469 Thames St, Newport, RI",
