@@ -304,7 +304,7 @@ const PLACES_VERSION = 3;
 // never resurrects a spot you already scheduled or deleted. "More info" points
 // at a Maps search rather than a homepage — for a trip that's the more useful
 // link (hours, phone, directions, reviews) and it can't rot.
-const SPOTS_VERSION = 4;
+const SPOTS_VERSION = 5;
 const mapsUrl = (q) => `https://www.google.com/maps/search/?api=1&query=${enc(q)}`;
 const spot = (id, category, name, near, summary) =>
   ({ id: `place-${id}`, category, name, near, summary, url: mapsUrl(`${name} ${near}`) });
@@ -353,6 +353,8 @@ const SPOTS_SEED = [
     "Restored 1787 smock windmill standing alone in an open field — a quick, photogenic stop on Conanicut Island."),
   spot("jamestown-playground", "Fun stuff", "Jamestown Community Playground", "26 North Rd, Jamestown, RI",
     "One of the largest playgrounds in the country built from recycled materials — zip line, platform swing, a tall lighthouse climber and a separate area for little kids. Parking behind the library next door."),
+  spot("aquidneck-park", "Fun stuff", "Aquidneck Park", "300 Spring St, Newport, RI",
+    "Newport's in-town green behind the public library — playground on the hill, lighted tennis courts, an outdoor fitness lot and a big open lawn. A pair of elephant sculptures sits on the Bowery St side."),
 
   // ---- Ice Cream ----
   spot("newport-creamery", "Ice Cream", "Newport Creamery", "Newport, RI",
@@ -383,6 +385,8 @@ const SPOTS_SEED = [
     "Family-run waterfront kitchen on Wickford Cove, serving breakfast through dinner. Multiple patios and decks looking out over the harbor."),
   spot("newport-sandwich-co", "Food", "Newport Sandwich Co.", "469 Thames St, Newport, RI",
     "Sandwich counter on Thames St — an easy grab-and-go lunch before heading out to Fort Adams. Closes at 4pm, and shut on Tuesdays."),
+  spot("marcos-cafe", "Food", "Marco's Café", "382 Spring St, Newport, RI",
+    "Grinders and sandwiches made to order on bakery-fresh bread, a couple of blocks up Spring St from Aquidneck Park. Early doors, but closes at 2pm — this is a breakfast or lunch stop."),
 ];
 
 export default function App() {
