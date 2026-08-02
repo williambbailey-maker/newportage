@@ -304,7 +304,7 @@ const PLACES_VERSION = 3;
 // never resurrects a spot you already scheduled or deleted. "More info" points
 // at a Maps search rather than a homepage — for a trip that's the more useful
 // link (hours, phone, directions, reviews) and it can't rot.
-const SPOTS_VERSION = 5;
+const SPOTS_VERSION = 6;
 const mapsUrl = (q) => `https://www.google.com/maps/search/?api=1&query=${enc(q)}`;
 const spot = (id, category, name, near, summary) =>
   ({ id: `place-${id}`, category, name, near, summary, url: mapsUrl(`${name} ${near}`) });
@@ -385,6 +385,8 @@ const SPOTS_SEED = [
     "Family-run waterfront kitchen on Wickford Cove, serving breakfast through dinner. Multiple patios and decks looking out over the harbor."),
   spot("newport-sandwich-co", "Food", "Newport Sandwich Co.", "469 Thames St, Newport, RI",
     "Sandwich counter on Thames St — an easy grab-and-go lunch before heading out to Fort Adams. Closes at 4pm, and shut on Tuesdays."),
+  spot("wallys-wieners", "Food", "Wally's Wieners", "464 Thames St, Newport, RI",
+    "Started as a hot dog cart in 2019, now a Thames St fixture serving Saugy's, gourmet wieners and espresso martinis. Open till 10, and 1am Friday and Saturday — the late option once everything else has shut."),
   spot("marcos-cafe", "Food", "Marco's Café", "382 Spring St, Newport, RI",
     "Grinders and sandwiches made to order on bakery-fresh bread, a couple of blocks up Spring St from Aquidneck Park. Early doors, but closes at 2pm — this is a breakfast or lunch stop."),
 ];
