@@ -644,6 +644,13 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
     ...trip,
     days: { ...trip.days, [activeDay]: items.map((i) => i.id === id ? { ...i, userNote: text } : i) },
   });
+  // A rating describes the place, not the appointment — so when an item came
+  // from a spot it's stored on the place and shows up wherever that place
+  // appears, including back in Spots. Items you typed by hand have no place
+  // record, so those keep it on the item itself.
+  const setRating = (it, placeId, n) => save(placeId
+    ? { ...trip, places: trip.places.map((p) => p.id === placeId ? { ...p, rating: n } : p) }
+    : { ...trip, days: { ...trip.days, [activeDay]: items.map((i) => i.id === it.id ? { ...i, rating: n } : i) } });
   const moveTo = (it, iso) => {
     if (iso === activeDay) { setMenuFor(null); return; }
     save({ ...trip, days: { ...trip.days, [activeDay]: items.filter((i) => i.id !== it.id), [iso]: [...(trip.days[iso] || []), it] } });
@@ -674,6 +681,7 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
           const open = expanded.has(it.id);
           const menuOpen = menuFor === it.id;
           const blurb = (sourcePlace && sourcePlace.summary) || it.note || "";
+          const rating = (sourcePlace ? sourcePlace.rating : it.rating) || 0;
           return (
           <SwipeRow key={it.id} onDelete={() => del(it.id)} label={it.title}>
           {/* The whole card is the toggle. Deliberately a <div>, not a <button>:
@@ -711,6 +719,7 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
             <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
               <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 7 }}>
                 <span style={{ minWidth: 0, fontSize: 20.4, fontWeight: 700, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.title}</span>
+                {!open && rating > 0 && <Stars value={rating} size={12} />}
                 {!open && it.userNote && <Ico n="pencil" s={13} c="var(--gold)" w={2.3} style={{ flexShrink: 0 }} />}
               </div>
               {open && (
@@ -751,6 +760,10 @@ function Itinerary({ trip, days, activeDay, setActiveDay, save }) {
                 {/* Seeded blocks carry their own standing detail (e.g. the fest
                     venue and end time); it's fixed copy, not an editable note. */}
                 {it.note && <div style={{ fontSize: 14.9, color: "var(--dim)", lineHeight: 1.5, marginTop: sourcePlace ? 9 : 11 }}>{it.note}</div>}
+
+                <div style={{ marginTop: hasDetail ? 7 : 7 }}>
+                  <Stars value={rating} size={19} onChange={(n) => setRating(it, sourcePlace && sourcePlace.id, n)} />
+                </div>
 
                 {/* Your own note, readable without turning the card over. */}
                 {it.userNote && (
@@ -910,6 +923,7 @@ function Places({ trip, days, save, setTab, setActiveDay }) {
   const list = filterCat === "All" ? available : available.filter((p) => p.category === filterCat);
 
   const del = (id) => save({ ...trip, places: (trip.places || []).filter((p) => p.id !== id) });
+  const setRating = (id, n) => save({ ...trip, places: trip.places.map((p) => p.id === id ? { ...p, rating: n } : p) });
   const schedule = (p, iso) => {
     save({ ...trip, days: { ...trip.days, [iso]: [...(trip.days[iso] || []), { id: uid(), title: p.name, fromPlace: p.id }] } });
     setPickerFor(null);
@@ -949,7 +963,10 @@ function Places({ trip, days, save, setTab, setActiveDay }) {
                 aria-expanded={open} aria-label={`${open ? "Collapse" : "Expand"} ${p.name}`}
                 style={{ borderRadius: 32, padding: 14, cursor: "pointer", height: open ? "auto" : CARD_COLLAPSED_H, overflow: "hidden" }}>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                  <div style={{ flex: 1, minWidth: 0, fontSize: 20.4, fontWeight: 700, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</div>
+                  <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 7 }}>
+                    <span style={{ minWidth: 0, fontSize: 20.4, fontWeight: 700, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
+                    {!open && p.rating > 0 && <Stars value={p.rating} size={12} />}
+                  </div>
                   {open && (
                     <button onClick={(e) => { e.stopPropagation(); setPickerFor((v) => (v === p.id ? null : p.id)); }} aria-label={`Schedule ${p.name}`}
                       aria-expanded={picking} style={{ ...ghost, flexShrink: 0, width: 32, height: 32, color: picking ? "var(--shout)" : "var(--dim)" }}>
@@ -974,6 +991,10 @@ function Places({ trip, days, save, setTab, setActiveDay }) {
                         More info ↗
                       </a>
                     )}
+
+                    <div style={{ marginTop: 7 }}>
+                      <Stars value={p.rating || 0} size={19} onChange={(n) => setRating(p.id, n)} />
+                    </div>
 
                     {picking && (
                       <div style={{ marginTop: 11, borderTop: "1px solid var(--glass-line)", paddingTop: 11 }}>
@@ -1028,6 +1049,35 @@ function DashedPill({ label }) {
 // swipe snaps open to reveal a Delete button you then tap (so a brush past the
 // threshold can't destroy anything), and a long swipe past halfway deletes
 // outright. Pointer events cover both touch and mouse.
+// 1–5 stars. Tapping the star you're already on clears the rating, so a
+// misfire costs one tap to undo. Without `onChange` it renders as plain glyphs
+// rather than buttons — which also keeps SwipeRow's swipe working over it,
+// since that check bails on real form controls.
+function Stars({ value = 0, onChange, size = 20 }) {
+  if (!onChange) {
+    return (
+      <span role="img" aria-label={`Rated ${value} of 5`} style={{ display: "inline-flex", gap: 1, flexShrink: 0 }}>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <Ico key={n} n="star" s={size} c="var(--gold)" w={2}
+            fill={n <= value ? "var(--gold)" : "none"} />
+        ))}
+      </span>
+    );
+  }
+  return (
+    <span style={{ display: "inline-flex", gap: 2, alignItems: "center", marginLeft: -6 }}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <button key={n} onClick={(e) => { e.stopPropagation(); onChange(n === value ? 0 : n); }}
+          aria-label={`${n} star${n > 1 ? "s" : ""}`} aria-pressed={n <= value}
+          style={{ ...ghost, width: size + 10, height: size + 10, color: "var(--gold)" }}>
+          <Ico n="star" s={size} c="var(--gold)" w={1.9}
+            fill={n <= value ? "var(--gold)" : "none"} />
+        </button>
+      ))}
+    </span>
+  );
+}
+
 // Turns a card over to show a different face. Only ONE face is ever mounted:
 // the card rotates edge-on, swaps its contents at 90° while it's invisible,
 // then rotates back. That's deliberate rather than the usual preserve-3d +
