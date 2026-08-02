@@ -304,7 +304,7 @@ const PLACES_VERSION = 3;
 // never resurrects a spot you already scheduled or deleted. "More info" points
 // at a Maps search rather than a homepage — for a trip that's the more useful
 // link (hours, phone, directions, reviews) and it can't rot.
-const SPOTS_VERSION = 6;
+const SPOTS_VERSION = 7;
 const mapsUrl = (q) => `https://www.google.com/maps/search/?api=1&query=${enc(q)}`;
 const spot = (id, category, name, near, summary) =>
   ({ id: `place-${id}`, category, name, near, summary, url: mapsUrl(`${name} ${near}`) });
@@ -327,6 +327,10 @@ const SPOTS_SEED = [
     "Around since 1936. Classic beach-shack seafood with clam cakes and lobster rolls — best from the upstairs seating overlooking Easton Beach."),
   spot("iggys-newport", "Clam Cakes", "Iggy's Doughboys", "Newport, RI",
     "The Newport-side Iggy's — same clam cakes and doughboys, closer to the festival."),
+
+  // ---- Beach ----
+  spot("nk-town-beach", "Beach", "North Kingstown Town Beach", "10 Beach St, North Kingstown, RI",
+    "Calm town beach on Narragansett Bay, a few minutes from Wickford village — sheltered water, easy parking, and no surf to speak of."),
 
   // ---- Nature ----
   spot("brenton-point", "Nature", "Brenton Point State Park", "Newport, RI",
